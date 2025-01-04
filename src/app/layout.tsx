@@ -1,11 +1,9 @@
 "use client";
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-
+import { Provider } from "react-redux";
 import "./globals.css";
-import Navbar from "@/Navbar";
-import SocketProvider from "../../providers/SocketProvider";
-
+import { myStore } from "@/redux/store";
+import Navbar from "@/components/Navbar";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -26,10 +24,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SocketProvider>
-          {/* <Navbar /> */}
+        <Provider store={myStore}>
+          <Navbar />
           {children}
-        </SocketProvider>
+        </Provider>
       </body>
     </html>
   );
