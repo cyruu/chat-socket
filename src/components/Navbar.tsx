@@ -1,29 +1,27 @@
 "use client";
-import { settemp } from "@/redux/socketSlice";
 import Link from "next/link";
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-
+import React from "react";
+import { Button } from "@mui/material";
+import { signOut, useSession } from "next-auth/react";
 const Navbar = () => {
-  const dis = useDispatch();
-  const temp = useSelector((state: any) => state.temp);
-  async function apiCall() {
-    await new Promise((res, rej) => {
-      setTimeout(() => {
-        res("sd");
-      }, 1000);
-    });
-    dis(settemp({ value: 1000 }));
-  }
-  useEffect(() => {
-    apiCall();
-  }, []);
+  const { data: sessionData, status } = useSession();
+
   return (
-    <div>
-      <Link href="/about">about</Link>
-      <Link href="/login">login</Link>
-      <Link href="/">home</Link>
-      <div>{temp ? <p>temp : {temp.value}</p> : <p>no temp value</p>}</div>
+    <div className="w-full flex justify-evenly">
+      {sessionData ? (
+        <>
+          <Link href="/">home</Link>
+          <Link href="/about">about</Link>
+
+          <Button variant="contained" onClick={() => signOut()}>
+            logout
+          </Button>
+        </>
+      ) : (
+        <Link href="/login">
+          <Button variant="contained">Login</Button>
+        </Link>
+      )}
     </div>
   );
 };

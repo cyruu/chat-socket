@@ -4,6 +4,9 @@ import { Provider } from "react-redux";
 import "./globals.css";
 import { myStore } from "@/redux/store";
 import Navbar from "@/components/Navbar";
+import { ToastContainer } from "react-toastify";
+import { SessionProvider } from "next-auth/react";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -24,10 +27,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Provider store={myStore}>
-          <Navbar />
-          {children}
-        </Provider>
+        <SessionProvider>
+          <Provider store={myStore}>
+            <ToastContainer />
+            <Navbar />
+            {children}
+          </Provider>
+        </SessionProvider>
       </body>
     </html>
   );

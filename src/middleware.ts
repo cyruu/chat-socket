@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import axios from "axios";
+export { default } from "next-auth/middleware";
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const token = true;
+  const token = request.cookies.get("nextjs.session-token") || null;
   const publicRoutes = ["/login", "/signup"];
   // const { data: resData } = await axios.get(
   //   "http://localhost:3000/api/users/getloggedinuser"

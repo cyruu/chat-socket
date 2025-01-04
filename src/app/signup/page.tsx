@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { TextField, Button } from "@mui/material";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import HttpsOutlinedIcon from "@mui/icons-material/HttpsOutlined";
+import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
 import Link from "next/link";
 
-const LoginPage = () => {
+const SignupPage = () => {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -34,22 +36,34 @@ const LoginPage = () => {
     <div className="h-[80vh] flex justify-center items-center">
       <form
         onSubmit={handleSubmit}
-        className="bg-white py-9 px-5 w-[90%] rounded-xl
+        className="bg-white py-9 px-4 w-[90%] rounded-xl
         shadow-md
         "
       >
         <p className="w-max mx-auto text-4xl font-bold mb-7">Chat.io</p>
 
         <div className="user-item flex items-end mb-5">
-          <PersonOutlineOutlinedIcon className="text-4xl text-gray-400 mr-2" />
+          <AlternateEmailOutlinedIcon className="text-3xl text-gray-400 mr-2" />
+          <TextField
+            variant="standard"
+            label="Email"
+            color="primary"
+            className="w-full"
+            size="small"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <div className="user-item flex items-end mb-5">
+          <PersonOutlineOutlinedIcon className="text-3xl text-gray-400 mr-2" />
           <TextField
             variant="standard"
             label="Username"
             color="primary"
             className="w-full"
             size="small"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
         <div className="user-item flex items-end mb-7">
@@ -59,20 +73,20 @@ const LoginPage = () => {
             label="Password"
             color="primary"
             className="w-full"
-            type="password"
             size="small"
+            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
-        <Button variant="contained" className="w-full " type="submit">
-          Login
+        <Button variant="contained" className="w-full ">
+          Sign up
         </Button>
         <p className="text-sm mt-4">
-          New here?
-          <Link href="/signup" className="text-blue-500 underline ml-1">
-            Create account
+          Ready to log in?
+          <Link href="/login" className="text-blue-500 underline ml-1">
+            Let&apos;s Get You In
           </Link>
         </p>
       </form>
@@ -80,4 +94,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SignupPage;

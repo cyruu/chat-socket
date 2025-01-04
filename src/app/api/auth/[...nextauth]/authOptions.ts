@@ -14,16 +14,30 @@ export const authOptions: NextAuthOptions = {
           const { username, password } = credentials;
           if (username == "cy") {
             const user = { _id: "101", username };
+            return user;
+          } else {
+            throw new Error("Invalid Username");
           }
         } catch (e: any) {
-          throw new Error("Internal Error: next-authorize");
+          throw new Error(e.message || "Internal Error: next-authorize");
         }
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
+      if (user) {
+        token._id = user._id;
+        token.username = user.username;
+      }
       return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user._id = token._id as string;
+        session.user.username = token.username as string;
+      }
+      return session;
     },
   },
   secret: process.env.AUTH_SECRET,
@@ -39,5 +53,8 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
       },
     },
+  },
+  pages: {
+    signIn: "/login",
   },
 };
