@@ -8,6 +8,7 @@ import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined
 import HttpsOutlinedIcon from "@mui/icons-material/HttpsOutlined";
 import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
 import Link from "next/link";
+import axios from "axios";
 
 const SignupPage = () => {
   const router = useRouter();
@@ -17,18 +18,18 @@ const SignupPage = () => {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    const resData = await signIn("credentials", {
-      redirect: false,
+    const { data: resData } = await axios.post("api/users/signup", {
       username,
+      email,
       password,
     });
-    if (resData?.error) {
-      notify(resData?.error, resData?.status);
+    notify(resData.msg, resData?.statusCode);
+    if (resData.statusCode != 200) {
       return;
     }
-    notify("Login success", resData?.status);
+
     setTimeout(() => {
-      router.push("/");
+      router.push("/login");
     }, 1700);
   };
 
@@ -48,10 +49,12 @@ const SignupPage = () => {
             variant="standard"
             label="Email"
             color="primary"
+            type="email"
             className="w-full"
             size="small"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
         </div>
         <div className="user-item flex items-end mb-5">
@@ -62,8 +65,9 @@ const SignupPage = () => {
             color="primary"
             className="w-full"
             size="small"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
           />
         </div>
         <div className="user-item flex items-end mb-7">
@@ -77,10 +81,11 @@ const SignupPage = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
         </div>
 
-        <Button variant="contained" className="w-full ">
+        <Button variant="contained" className="w-full " type="submit">
           Sign up
         </Button>
         <p className="text-sm mt-4">

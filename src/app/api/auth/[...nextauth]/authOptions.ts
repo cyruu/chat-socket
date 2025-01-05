@@ -1,5 +1,8 @@
+import { dbconnect } from "@/index";
 import { NextAuthOptions } from "next-auth";
+import bcryptjs from "bcryptjs";
 import CredentialsProvider from "next-auth/providers/credentials";
+import UserModel from "@/models/UserModel";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,13 +14,27 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials: any): Promise<any> {
         try {
+          await dbconnect();
           const { username, password } = credentials;
-          if (["cyrus", "mhr", "aqua"].includes(username)) {
-            const user = { _id: username + "101", username };
-            return user;
-          } else {
-            throw new Error("Invalid Username");
+
+          const userCheck = await UserModel.findOne({ username });
+          if (!userCheck) {
+            throw new Error("Invalid user");
           }
+          const hashedCorrect = await bcryptjs.compare(
+            password,
+            userCheck.password
+          );
+          if (!hashedCorrect) {
+            throw new Error("Incorrect password");
+          }
+          const user = {
+            _id: userCheck._id,
+            username: userCheck.username,
+            userEmail: userCheck.email,
+            isadmin: userCheck.isadmin,
+          };
+          return user;
         } catch (e: any) {
           throw new Error(e.message || "Internal Error: next-authorize");
         }

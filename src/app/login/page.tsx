@@ -50,6 +50,7 @@ const LoginPage = () => {
             size="small"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            required
           />
         </div>
         <div className="user-item flex items-end mb-7">
@@ -63,6 +64,7 @@ const LoginPage = () => {
             size="small"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
         </div>
 

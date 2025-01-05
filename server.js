@@ -20,6 +20,10 @@ app.prepare().then(() => {
       const {
         user: { _id, username },
       } = sessionData;
+      // Remove old entry for the same user (_id)
+      connectedUsers = connectedUsers.filter(
+        (eachConnectedUser) => eachConnectedUser._id !== _id
+      );
       const tempConnectedUsers = { _id, username, socketId: socket.id };
       connectedUsers.push(tempConnectedUsers);
       io.emit("connected-users", connectedUsers);
@@ -27,6 +31,7 @@ app.prepare().then(() => {
 
     // on disconnect
     socket.on("disconnect", () => {
+      console.log("dissssssss", socket.id);
       connectedUsers = connectedUsers.filter(
         (eachConnectedUser) => eachConnectedUser.socketId != socket.id
       );

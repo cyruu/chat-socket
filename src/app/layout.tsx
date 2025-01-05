@@ -6,7 +6,16 @@ import { myStore } from "@/redux/store";
 import Navbar from "@/components/Navbar";
 import { ToastContainer } from "react-toastify";
 import { SessionProvider } from "next-auth/react";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 
+// material ui themeOptions
+const theme = createTheme({
+  typography: {
+    button: {
+      textTransform: "none", // Disables default uppercase transformation
+    },
+  },
+});
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,13 +36,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>
-          <Provider store={myStore}>
-            <ToastContainer />
-            {/* <Navbar /> */}
-            {children}
-          </Provider>
-        </SessionProvider>
+        {/* material-ui theme provider */}
+        <ThemeProvider theme={theme}>
+          {/* next-auth-provider */}
+          <SessionProvider>
+            {/* redux provider */}
+            <Provider store={myStore}>
+              <ToastContainer />
+              {/* <Navbar /> */}
+              {children}
+            </Provider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

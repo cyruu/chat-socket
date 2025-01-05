@@ -2,7 +2,7 @@
 import { setAllConnectedUsers } from "@/redux/chatSlice";
 import { setSocket } from "@/redux/socketSlice";
 import { Avatar, Button } from "@mui/material";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
@@ -11,14 +11,16 @@ import TextsmsIcon from "@mui/icons-material/Textsms";
 
 const page = () => {
   const { data: sessionData, status } = useSession();
+
   const dis = useDispatch();
   const socket = useSelector((state: any) => state.socketReducer.socket);
   const allConnectedUsers = useSelector(
     (state: any) => state.chatReducer.allConnectedUsers
   );
+  console.log(allConnectedUsers);
 
   // state variables
-  const [selectedMenu, setselectedMenu] = useState("active");
+  const [selectedMenu, setselectedMenu] = useState("chats");
 
   useEffect(() => {
     const clientSocket = io();
@@ -49,7 +51,7 @@ const page = () => {
       {/* chat-header */}
       <div className="chat-bar-header h-[10dvh] flex items-center justify-between">
         <p className="text-3xl font-bold ">Chat.io</p>
-        <Button>
+        <Button onClick={() => signOut()}>
           <ExitToAppIcon sx={{ color: "black" }} />
         </Button>
       </div>
@@ -72,19 +74,25 @@ const page = () => {
       <div className="menu-tabs flex justify-around bg-gray-300 items-center h-[6dvh] my-4 rounded-full">
         <button
           onClick={() => setselectedMenu("chats")}
-          className="text-xs bg-white px-4 py-1 rounded-xl text-black shadow-md"
+          className={`text-xs px-4 py-1 rounded-xl text-black shadow-md ${
+            selectedMenu == "chats" ? "bg-gray-400 text-white" : " bg-white"
+          }`}
         >
           Chats
         </button>
         <button
           onClick={() => setselectedMenu("active")}
-          className="text-xs bg-white px-4 py-1 rounded-xl text-black shadow-md"
+          className={`text-xs px-4 py-1 rounded-xl text-black shadow-md ${
+            selectedMenu == "active" ? "bg-gray-400 text-white" : " bg-white"
+          }`}
         >
           Active
         </button>
         <button
           onClick={() => setselectedMenu("search")}
-          className="text-xs bg-white px-4 py-1 rounded-xl text-black shadow-md"
+          className={`text-xs px-4 py-1 rounded-xl text-black shadow-md ${
+            selectedMenu == "search" ? "bg-gray-400 text-white" : " bg-white"
+          }`}
         >
           Search
         </button>
