@@ -12,8 +12,8 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials: any): Promise<any> {
         try {
           const { username, password } = credentials;
-          if (username == "cy") {
-            const user = { _id: "101", username };
+          if (["cyrus", "mhr", "aqua"].includes(username)) {
+            const user = { _id: username + "101", username };
             return user;
           } else {
             throw new Error("Invalid Username");

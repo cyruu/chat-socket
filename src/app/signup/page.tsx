@@ -37,7 +37,7 @@ const SignupPage = () => {
       <form
         onSubmit={handleSubmit}
         className="bg-white py-9 px-4 w-[90%] rounded-xl
-        shadow-md
+        shadow-md md:w-[30%] md:py-12 md:px-7
         "
       >
         <p className="w-max mx-auto text-4xl font-bold mb-7">Chat.io</p>

@@ -13,8 +13,25 @@ app.prepare().then(() => {
   const httpServer = createServer(handler);
 
   const io = new Server(httpServer);
+
+  let connectedUsers = [];
   io.on("connection", (socket) => {
-    console.log("User connected", socket.id);
+    socket.on("user-connected", (sessionData) => {
+      const {
+        user: { _id, username },
+      } = sessionData;
+      const tempConnectedUsers = { _id, username, socketId: socket.id };
+      connectedUsers.push(tempConnectedUsers);
+      io.emit("connected-users", connectedUsers);
+    });
+
+    // on disconnect
+    socket.on("disconnect", () => {
+      connectedUsers = connectedUsers.filter(
+        (eachConnectedUser) => eachConnectedUser.socketId != socket.id
+      );
+      io.emit("connected-users", connectedUsers);
+    });
   });
 
   httpServer

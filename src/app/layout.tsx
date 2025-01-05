@@ -30,7 +30,7 @@ export default function RootLayout({
         <SessionProvider>
           <Provider store={myStore}>
             <ToastContainer />
-            <Navbar />
+            {/* <Navbar /> */}
             {children}
           </Provider>
         </SessionProvider>
