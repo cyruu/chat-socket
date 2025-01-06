@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+import { v4 as uuidv4 } from "uuid";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -16,6 +17,7 @@ app.prepare().then(() => {
 
   let connectedUsers = [];
   io.on("connection", (socket) => {
+    // initial socket connection event
     socket.on("user-connected", (sessionData) => {
       const {
         user: { _id, username },
@@ -27,6 +29,36 @@ app.prepare().then(() => {
       const tempConnectedUsers = { _id, username, socketId: socket.id };
       connectedUsers.push(tempConnectedUsers);
       io.emit("connected-users", connectedUsers);
+    });
+
+    // send-message
+    socket.on("send-message", (tempMessage) => {
+      console.log(tempMessage);
+
+      const { sentBy, receivedBy, message, isDeleted } = tempMessage;
+      // get socket id for sender and receiver from connectedUsers
+      const senderSocketId = socket.id;
+      // receiver is conncted to socket it gives socket it
+      // if reciever is not active it gives null
+      const receiverSocketId =
+        connectedUsers.filter((connectedUser) => {
+          return connectedUser._id == receivedBy;
+        })[0]?.socketId || null;
+
+      // receiver is active
+      if (receiverSocketId) {
+        socket.to(receiverSocketId).emit("receive-message-from-server", {
+          ...tempMessage,
+          createdAt: Date.now(),
+        });
+      }
+
+      // send this same message to sender as well
+      // to update message state in frontend
+      socket.emit("receive-message-from-server", {
+        ...tempMessage,
+        createdAt: Date.now(),
+      });
     });
 
     // on disconnect

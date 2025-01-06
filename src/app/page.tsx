@@ -3,7 +3,7 @@ import { setAllConnectedUsers } from "@/redux/chatSlice";
 import { setSocket } from "@/redux/socketSlice";
 import { Avatar, Button, TextField } from "@mui/material";
 import { signOut, useSession } from "next-auth/react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
@@ -12,21 +12,40 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
 
 const page = () => {
-  const { data: sessionData, status } = useSession();
+  // state variables
+  const [showMessages, setshowMessages] = useState<any>([]);
+  const [selectedMenu, setselectedMenu] = useState("chats");
+  const [message, setmessage] = useState<string | undefined>("");
+  const [sentBy, setsentBy] = useState<string | undefined>("");
+  // clientSocket for component
+  const [componentClientSocket, setcomponentClientSocket] = useState<any>(null);
 
+  // receivedBy cyruu
+  const [receivedBy, setreceivedBy] = useState<string | undefined>(
+    "677ab60db539cc776ec0150f"
+  );
+  //session data
+  const { data: sessionData, status } = useSession();
+  //redux hooks
   const dis = useDispatch();
+  // redux socket only contain socketid , connected i.e. {id,connected}
   const socket = useSelector((state: any) => state.socketReducer.socket);
   const allConnectedUsers = useSelector(
     (state: any) => state.chatReducer.allConnectedUsers
   );
-
-  // state variables
-  const [selectedMenu, setselectedMenu] = useState("chats");
+  //references
+  const allMessagesContainerRef = useRef<any>(null);
 
   useEffect(() => {
+    //set sentby to session user id
+    if (sessionData?.user) {
+      setsentBy(sessionData?.user?._id);
+    }
     const clientSocket = io();
     // on socket connection
     clientSocket.on("connect", () => {
+      // set to componentClientSocket
+      setcomponentClientSocket(clientSocket);
       // send session data to server
       if (sessionData) {
         clientSocket.emit("user-connected", sessionData);
@@ -35,6 +54,13 @@ const page = () => {
       dis(
         setSocket({ id: clientSocket.id, connected: clientSocket.connected })
       );
+
+      // receive-message-from-server
+      clientSocket.on("receive-message-from-server", (tempMessage) => {
+        console.log(tempMessage);
+
+        setshowMessages((prev: any) => [...prev, tempMessage]);
+      });
 
       // initially get all connected users
       clientSocket.on("connected-users", (connectedUsers: String[]) => {
@@ -46,11 +72,39 @@ const page = () => {
     };
   }, [sessionData?.user]);
 
+  // useEffect for scroll
+  useEffect(() => {
+    if (allMessagesContainerRef.current) {
+      allMessagesContainerRef.current.scrollTo({
+        top: allMessagesContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [showMessages.length]);
+
+  // send message function
+  function sendMessage(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (componentClientSocket) {
+      const tempMessage = {
+        sentBy,
+        receivedBy,
+        message,
+        //default isDeleted false
+        isDeleted: false,
+      };
+
+      componentClientSocket.emit("send-message", tempMessage);
+    }
+    console.log("sent by", sentBy);
+    console.log("received by", receivedBy);
+  }
+
   if (!socket || status == "loading") return <p>Loading..</p>;
   return (
     <div className="main-continer flex w-full h-full md:w-[70vw] md:h-[90vh]">
       {/* chat-container */}
-      <div className="chat-bar h-[100dvh] px-5  w-full md:w-1/2 md:h-full md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[35%]">
+      <div className="chat-bar hidden h-[100dvh] px-5  w-full md:w-1/2 md:h-full md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[35%]">
         {/* chat-header */}
         <div className="chat-bar-header h-[10dvh] flex items-center justify-between">
           <p className="text-3xl font-bold ">Chat.io</p>
@@ -228,7 +282,7 @@ const page = () => {
         )}
       </div>
       {/* message-side-container */}
-      <div className="message-side-container hidden flex-col md:flex md:w-1/2 md:ml-3 md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[65%]">
+      <div className="message-side-container  flex-col h-full flex w-full md:w-1/2 ml-3 bg-white rounded-xl shadow-lg lf xl:w-[65%]">
         {/* message header */}
         <div className="message-header h-[9dvh] w-full px-5 flex justify-between items-center shadow-lg border-1">
           <div className="your-info flex">
@@ -241,12 +295,8 @@ const page = () => {
               />
             </div>
             <div className="info ml-3">
-              <p className="text-md font-medium">
-                {sessionData?.user?.username}
-              </p>
-              <p className="text-[.6rem] text-gray-500">
-                {sessionData?.user?.email}
-              </p>
+              <p className="text-md font-medium">cyruu</p>
+              <p className="text-[.6rem] text-gray-500">cyruu@gmail.com</p>
             </div>
           </div>
           {/* close button for mobile */}
@@ -255,29 +305,50 @@ const page = () => {
           </Button>
         </div>
         {/* messsage-container */}
-        <div className="message-container flex flex-col justify-end p-5 flex-1 ">
-          <div className="each-message bg-gray-200 text-sm  text-gray-500 w-max py-2 px-3 mb-2 rounded-full mr-auto">
+        <div
+          ref={allMessagesContainerRef}
+          className="message-container scrollbar-hide flex flex-col justify-end p-5 pb-0 flex-1 overflow-y-auto "
+        >
+          {/* <div className="each-message bg-gray-200 text-sm  text-gray-500 w-max py-2 px-3 mb-2 rounded-full mr-auto">
             hello
           </div>
           <div className="each-message bg-blue-400 text-sm  text-white w-max py-2 px-3 mb-2 rounded-full ml-auto">
             Whats up
-          </div>
-          <div className="each-message bg-gray-200 text-sm  text-gray-500 w-max py-2 px-3 mb-2 rounded-full mr-auto">
-            Fk Off
-          </div>
-          <div className="each-message bg-blue-400 text-sm  text-white w-max py-2 px-3 mb-2 rounded-full ml-auto">
-            Ok
+          </div> */}
+          <div className="all-messages max-h-full w-full ">
+            {showMessages.map((showMessage: any) => {
+              return (
+                <div
+                  key={showMessage?.createdAt}
+                  className={`each-message max-w-[50%] w-max py-2 px-3 mb-2 rounded-xl  break-words ${
+                    showMessage.sentBy == sessionData?.user?._id
+                      ? " ml-auto bg-blue-400 text-sm  text-white"
+                      : " mr-auto bg-gray-200 text-sm  text-gray-500"
+                  }`}
+                >
+                  {showMessage?.message}
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* input message */}
-        <div className="input-message-container flex items-center bg-gray-100 rounded-full mx-5 mt-4 mb-7 px-4 py-3 ">
+        <form
+          onSubmit={sendMessage}
+          className="input-message-container flex items-center bg-gray-100 rounded-full mx-5 mb-6 mt-4 px-4 py-3 "
+        >
           <input
             placeholder="Type someting..."
             className="text-sm flex-1 bg-transparent mr-2 outline-none text-gray-500"
+            value={message}
+            onChange={({ target }) => setmessage(target.value)}
+            required
           />
-          <SendIcon sx={{ fontSize: "1.1rem", color: "gray" }} />
-        </div>
+          <button className="" type="submit">
+            <SendIcon sx={{ fontSize: "1.1rem", color: "gray" }} />
+          </button>
+        </form>
       </div>
     </div>
   );
