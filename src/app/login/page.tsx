@@ -31,11 +31,11 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="h-[80vh] flex justify-center items-center">
+    <div className=" flex justify-center items-center w-full ">
       <form
         onSubmit={handleSubmit}
         className="bg-white py-9 px-5 w-[90%] rounded-xl
-        shadow-md md:w-[30%] md:py-12 md:px-7
+        shadow-md md:w-[37%] md:py-12 md:px-7 xl:w-[30%]
         "
       >
         <p className="w-max mx-auto text-4xl font-bold mb-7">Chat.io</p>

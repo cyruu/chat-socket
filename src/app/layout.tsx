@@ -9,10 +9,28 @@ import { SessionProvider } from "next-auth/react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 // material ui themeOptions
+declare module "@mui/material/Button" {
+  interface ButtonPropsVariantOverrides {
+    grayvariant: true;
+  }
+}
 const theme = createTheme({
   typography: {
     button: {
       textTransform: "none", // Disables default uppercase transformation
+    },
+  },
+  // button new variant
+  components: {
+    MuiButton: {
+      variants: [
+        {
+          props: { variant: "grayvariant" }, // Define the new variant name
+          style: {
+            color: "gray",
+          },
+        },
+      ],
     },
   },
 });
@@ -34,7 +52,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased
+         h-[100dvh] flex items-center justify-center
+        `}
       >
         {/* material-ui theme provider */}
         <ThemeProvider theme={theme}>

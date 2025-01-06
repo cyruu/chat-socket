@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
           const user = {
             _id: userCheck._id,
             username: userCheck.username,
-            userEmail: userCheck.email,
+            email: userCheck.email,
             isadmin: userCheck.isadmin,
           };
           return user;
