@@ -20,13 +20,13 @@ app.prepare().then(() => {
     // initial socket connection event
     socket.on("user-connected", (sessionData) => {
       const {
-        user: { _id, username },
+        user: { _id, username, email },
       } = sessionData;
       // Remove old entry for the same user (_id)
       connectedUsers = connectedUsers.filter(
         (eachConnectedUser) => eachConnectedUser._id !== _id
       );
-      const tempConnectedUsers = { _id, username, socketId: socket.id };
+      const tempConnectedUsers = { _id, username, email, socketId: socket.id };
       connectedUsers.push(tempConnectedUsers);
       io.emit("connected-users", connectedUsers);
     });
@@ -35,7 +35,14 @@ app.prepare().then(() => {
     socket.on("send-message", (tempMessage) => {
       console.log(tempMessage);
 
-      const { sentBy, receivedBy, message, isDeleted } = tempMessage;
+      const {
+        sentBy,
+        sentByObject,
+        receivedBy,
+        receivedByObject,
+        message,
+        isDeleted,
+      } = tempMessage;
       // get socket id for sender and receiver from connectedUsers
       const senderSocketId = socket.id;
       // receiver is conncted to socket it gives socket it

@@ -10,20 +10,21 @@ import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import TextsmsIcon from "@mui/icons-material/Textsms";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
+import WavingHandIcon from "@mui/icons-material/WavingHand";
 
 const page = () => {
   // state variables
   const [showMessages, setshowMessages] = useState<any>([]);
-  const [selectedMenu, setselectedMenu] = useState("chats");
+  const [selectedMenu, setselectedMenu] = useState("active");
   const [message, setmessage] = useState<string | undefined>("");
   const [sentBy, setsentBy] = useState<string | undefined>("");
+  const [receivedBy, setreceivedBy] = useState<string | null>(null);
+  const [receivedByObject, setreceivedByObject] = useState<any>(null);
+  const [yourChats, setyourChats] = useState<any>([]);
+
   // clientSocket for component
   const [componentClientSocket, setcomponentClientSocket] = useState<any>(null);
 
-  // receivedBy cyruu
-  const [receivedBy, setreceivedBy] = useState<string | undefined>(
-    "677ab60db539cc776ec0150f"
-  );
   //session data
   const { data: sessionData, status } = useSession();
   //redux hooks
@@ -57,9 +58,74 @@ const page = () => {
 
       // receive-message-from-server
       clientSocket.on("receive-message-from-server", (tempMessage) => {
+        const {
+          sentBy,
+          sentByObject,
+          receivedBy,
+          receivedByObject,
+          message,
+          isDeleted,
+          createdAt,
+        } = tempMessage;
+
         console.log(tempMessage);
 
-        setshowMessages((prev: any) => [...prev, tempMessage]);
+        // Update your chats
+        if (sessionData) {
+          let myId = sessionData?.user?._id;
+          let tempYourChats: any = [];
+
+          setyourChats((prev: any) => {
+            tempYourChats = [...prev, tempMessage];
+            return tempYourChats;
+          });
+          console.log(tempYourChats);
+
+          // Check if the exact chat already exists
+          // let containsChatArray = tempYourChats.filter((yourChat) => {
+          //   return (
+          //     (yourChat.sentBy == myId && yourChat.receivedBy == receivedBy) ||
+          //     (yourChat.sentBy == receivedBy && yourChat.receivedBy == myId)
+          //   );
+          // });
+
+          // if (containsChatArray.length == 0) {
+          //   // Add a new chat if no chat exists between the two users
+          //   tempYourChats.push({
+          //     sentBy,
+          //     sentByObject,
+          //     receivedBy,
+          //     receivedByObject,
+          //     createdAt,
+          //     latestMessage: message,
+          //   });
+          // } else {
+          //   // Update the existing chat
+          //   tempYourChats = tempYourChats.map((yourChat) => {
+          //     if (
+          //       (yourChat.sentBy == myId &&
+          //         yourChat.receivedBy == receivedBy) ||
+          //       (yourChat.sentBy == receivedBy && yourChat.receivedBy == myId)
+          //     ) {
+          //       return {
+          //         ...yourChat,
+          //         latestMessage: message,
+          //         createdAt,
+          //       };
+          //     }
+          //     return yourChat;
+          //   });
+          // }
+
+          // // Sort chats by `createdAt` in descending order
+          // tempYourChats = tempYourChats.sort(
+          //   (a, b) =>
+          //     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          // );
+
+          // console.log("chats", tempYourChats);
+          // setyourChats(tempYourChats);
+        }
       });
 
       // initially get all connected users
@@ -88,7 +154,13 @@ const page = () => {
     if (componentClientSocket) {
       const tempMessage = {
         sentBy,
+        sentByObject: {
+          _id: sessionData?.user?._id,
+          username: sessionData?.user?.username,
+          email: sessionData?.user?.email,
+        },
         receivedBy,
+        receivedByObject,
         message,
         //default isDeleted false
         isDeleted: false,
@@ -104,7 +176,7 @@ const page = () => {
   return (
     <div className="main-continer flex w-full h-full md:w-[70vw] md:h-[90vh]">
       {/* chat-container */}
-      <div className="chat-bar hidden h-[100dvh] px-5  w-full md:w-1/2 md:h-full md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[35%]">
+      <div className="chat-bar h-[100dvh] px-5  w-full md:w-1/2 md:h-full md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[35%]">
         {/* chat-header */}
         <div className="chat-bar-header h-[10dvh] flex items-center justify-between">
           <p className="text-3xl font-bold ">Chat.io</p>
@@ -239,8 +311,8 @@ const page = () => {
             <p className="mb-4">Active Users</p>
             <div className="active-users-container grid grid-cols-2 gap-5 ">
               {allConnectedUsers.map((connectedUser: any) => {
-                // if (connectedUser.socketId != socket.id) {
-                if (true) {
+                if (connectedUser.socketId != socket.id) {
+                  // if (true) {
                   return (
                     <div
                       key={connectedUser?._id}
@@ -260,6 +332,10 @@ const page = () => {
                         size="small"
                         sx={{ background: "gray" }}
                         className="w-[80%] mx-auto"
+                        onClick={() => {
+                          setreceivedBy(connectedUser?._id);
+                          setreceivedByObject(connectedUser);
+                        }}
                       >
                         <TextsmsIcon
                           className="mr-2"
@@ -283,72 +359,85 @@ const page = () => {
       </div>
       {/* message-side-container */}
       <div className="message-side-container  flex-col h-full flex w-full md:w-1/2 ml-3 bg-white rounded-xl shadow-lg lf xl:w-[65%]">
-        {/* message header */}
-        <div className="message-header h-[9dvh] w-full px-5 flex justify-between items-center shadow-lg border-1">
-          <div className="your-info flex">
-            <div className="avatar-container relative ">
-              <span className="absolute z-20 h-[6px] w-[6px] bg-green-500 bottom-0 left-0 rounded-full"></span>
-              <Avatar
-                sx={{ height: "2.5rem", width: "2.5rem" }}
-                className="bg-red-200 border-2 border-green-600"
-                src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
-              />
-            </div>
-            <div className="info ml-3">
-              <p className="text-md font-medium">cyruu</p>
-              <p className="text-[.6rem] text-gray-500">cyruu@gmail.com</p>
-            </div>
-          </div>
-          {/* close button for mobile */}
-          <Button variant="grayvariant">
-            <ArrowBackIcon />
-          </Button>
-        </div>
-        {/* messsage-container */}
-        <div
-          ref={allMessagesContainerRef}
-          className="message-container scrollbar-hide flex flex-col justify-end p-5 pb-0 flex-1 overflow-y-auto "
-        >
-          {/* <div className="each-message bg-gray-200 text-sm  text-gray-500 w-max py-2 px-3 mb-2 rounded-full mr-auto">
-            hello
-          </div>
-          <div className="each-message bg-blue-400 text-sm  text-white w-max py-2 px-3 mb-2 rounded-full ml-auto">
-            Whats up
-          </div> */}
-          <div className="all-messages max-h-full w-full ">
-            {showMessages.map((showMessage: any) => {
-              return (
-                <div
-                  key={showMessage?.createdAt}
-                  className={`each-message max-w-[50%] w-max py-2 px-3 mb-2 rounded-xl  break-words ${
-                    showMessage.sentBy == sessionData?.user?._id
-                      ? " ml-auto bg-blue-400 text-sm  text-white"
-                      : " mr-auto bg-gray-200 text-sm  text-gray-500"
-                  }`}
-                >
-                  {showMessage?.message}
+        {receivedBy && receivedByObject ? (
+          <>
+            {/* message header */}
+            <div className="message-header h-[9dvh] w-full px-5 flex justify-between items-center shadow-lg border-1">
+              <div className="your-info flex">
+                <div className="avatar-container relative ">
+                  <span className="absolute z-20 h-[6px] w-[6px] bg-green-500 bottom-0 left-0 rounded-full"></span>
+                  <Avatar
+                    sx={{ height: "2.5rem", width: "2.5rem" }}
+                    className="bg-red-200 border-2 border-green-600"
+                    src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                  />
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <div className="info ml-3">
+                  <p className="text-md font-medium">
+                    {receivedByObject.username}
+                  </p>
+                  <p className="text-[.6rem] text-gray-500">
+                    {receivedByObject.email}
+                  </p>
+                </div>
+              </div>
+              {/* close button for mobile */}
+              <Button variant="grayvariant">
+                <ArrowBackIcon />
+              </Button>
+            </div>
+            {/* messsage-container */}
+            <div
+              className="message-container scrollbar-hide flex flex-col justify-end p-5 pb-0 flex-1 overflow-y-auto "
+              ref={allMessagesContainerRef}
+            >
+              {showMessages.length == 0 ? (
+                <div className="flex items-center justify-center flex-col mb-5">
+                  <WavingHandIcon sx={{ fontSize: "2.1rem", color: "gray" }} />
+                  <p className="text-gray-500 font-medium mt-1">
+                    Start a conversation
+                  </p>
+                </div>
+              ) : (
+                <div className="all-messages max-h-full w-full ">
+                  {showMessages.map((showMessage: any) => {
+                    return (
+                      <div
+                        key={showMessage?.createdAt}
+                        className={`each-message max-w-[50%] w-max py-2 px-3 mb-2 rounded-xl  break-words ${
+                          showMessage.sentBy == sessionData?.user?._id
+                            ? " ml-auto bg-blue-400 text-sm  text-white"
+                            : " mr-auto bg-gray-200 text-sm  text-gray-500"
+                        }`}
+                      >
+                        {showMessage?.message}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-        {/* input message */}
-        <form
-          onSubmit={sendMessage}
-          className="input-message-container flex items-center bg-gray-100 rounded-full mx-5 mb-6 mt-4 px-4 py-3 "
-        >
-          <input
-            placeholder="Type someting..."
-            className="text-sm flex-1 bg-transparent mr-2 outline-none text-gray-500"
-            value={message}
-            onChange={({ target }) => setmessage(target.value)}
-            required
-          />
-          <button className="" type="submit">
-            <SendIcon sx={{ fontSize: "1.1rem", color: "gray" }} />
-          </button>
-        </form>
+            {/* input message */}
+            <form
+              onSubmit={sendMessage}
+              className="input-message-container flex items-center bg-gray-100 rounded-full mx-5 mb-6 mt-4 px-4 py-3 "
+            >
+              <input
+                placeholder="Type someting..."
+                className="text-sm flex-1 bg-transparent mr-2 outline-none text-gray-500"
+                value={message}
+                onChange={({ target }) => setmessage(target.value)}
+                required
+              />
+              <button className="" type="submit">
+                <SendIcon sx={{ fontSize: "1.1rem", color: "gray" }} />
+              </button>
+            </form>
+          </>
+        ) : (
+          "not selected"
+        )}
       </div>
     </div>
   );
