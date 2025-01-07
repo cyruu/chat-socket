@@ -60,6 +60,7 @@ app.prepare().then(() => {
         });
       }
 
+      //needed any how
       // send this same message to sender as well
       // to update message state in frontend
       socket.emit("receive-message-from-server", {

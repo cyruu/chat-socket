@@ -34,6 +34,8 @@ const page = () => {
   const allConnectedUsers = useSelector(
     (state: any) => state.chatReducer.allConnectedUsers
   );
+  console.log(allConnectedUsers);
+
   //references
   const allMessagesContainerRef = useRef<any>(null);
 
@@ -59,73 +61,51 @@ const page = () => {
       // receive-message-from-server
       clientSocket.on("receive-message-from-server", (tempMessage) => {
         const {
-          sentBy,
+          sentBy: sentByServer,
+          receivedBy: receivedByServer,
           sentByObject,
-          receivedBy,
           receivedByObject,
           message,
-          isDeleted,
           createdAt,
         } = tempMessage;
 
-        console.log(tempMessage);
+        setshowMessages((prev: any) => [...prev, tempMessage]);
 
-        // Update your chats
-        if (sessionData) {
-          let myId = sessionData?.user?._id;
-          let tempYourChats: any = [];
+        const otherUserObject =
+          sentByServer === sessionData?.user?._id
+            ? receivedByObject
+            : sentByObject; // Identify the other user's ID.
 
-          setyourChats((prev: any) => {
-            tempYourChats = [...prev, tempMessage];
-            return tempYourChats;
-          });
-          console.log(tempYourChats);
+        setyourChats((prevChats: any) => {
+          // Find the index of the chat with the other user.
+          const existingChatIndex = prevChats.findIndex(
+            (chat: any) => chat.otherUserObject._id === otherUserObject._id
+          );
+          let updatedChats;
 
-          // Check if the exact chat already exists
-          // let containsChatArray = tempYourChats.filter((yourChat) => {
-          //   return (
-          //     (yourChat.sentBy == myId && yourChat.receivedBy == receivedBy) ||
-          //     (yourChat.sentBy == receivedBy && yourChat.receivedBy == myId)
-          //   );
-          // });
+          if (existingChatIndex !== -1) {
+            // Chat exists, update it with the latest message and createdAt.
+            updatedChats = [...prevChats];
+            updatedChats[existingChatIndex] = {
+              ...updatedChats[existingChatIndex],
+              latestMessage: message,
+              createdAt,
+            };
+          } else {
+            // Chat does not exist, add a new one.
+            updatedChats = [
+              ...prevChats,
+              {
+                otherUserObject,
+                latestMessage: message,
+                createdAt,
+              },
+            ];
+          }
 
-          // if (containsChatArray.length == 0) {
-          //   // Add a new chat if no chat exists between the two users
-          //   tempYourChats.push({
-          //     sentBy,
-          //     sentByObject,
-          //     receivedBy,
-          //     receivedByObject,
-          //     createdAt,
-          //     latestMessage: message,
-          //   });
-          // } else {
-          //   // Update the existing chat
-          //   tempYourChats = tempYourChats.map((yourChat) => {
-          //     if (
-          //       (yourChat.sentBy == myId &&
-          //         yourChat.receivedBy == receivedBy) ||
-          //       (yourChat.sentBy == receivedBy && yourChat.receivedBy == myId)
-          //     ) {
-          //       return {
-          //         ...yourChat,
-          //         latestMessage: message,
-          //         createdAt,
-          //       };
-          //     }
-          //     return yourChat;
-          //   });
-          // }
-
-          // // Sort chats by `createdAt` in descending order
-          // tempYourChats = tempYourChats.sort(
-          //   (a, b) =>
-          //     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          // );
-
-          // console.log("chats", tempYourChats);
-          // setyourChats(tempYourChats);
-        }
+          // Sort the chats by createdAt (latest first).
+          return updatedChats.sort((a, b) => b.createdAt - a.createdAt);
+        });
       });
 
       // initially get all connected users
@@ -234,74 +214,67 @@ const page = () => {
             <p className="mb-1">Your Chats</p>
             {/* all chat container */}
             <div className="all-chat-container flex flex-col">
-              {/* eeach single chat */}
-              <Button
-                className="each-chat flex"
-                variant="grayvariant"
-                sx={{ padding: ".4rem 0", marginBottom: ".8rem" }}
-              >
-                <div className="avatar-container relative ">
-                  <span className="absolute z-20 h-[8px] w-[8px] bg-green-500 bottom-0 left-0 rounded-full"></span>
-                  <Avatar
-                    sx={{ height: "3.5rem", width: "3.5rem" }}
-                    className="bg-red-200 border-2 border-green-600"
-                    src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
-                  />
+              {yourChats.length == 0 ? (
+                <p>No chats yet</p>
+              ) : (
+                <div className="all-chats ">
+                  {yourChats.map((chat: any) => {
+                    const { otherUserObject, latestMessage, createdAt } = chat;
+                    // each chat
+                    return (
+                      <Button
+                        key={createdAt}
+                        className="each-chat w-full bg-red-300+ flex"
+                        variant="grayvariant"
+                        sx={{ padding: ".4rem 0", marginBottom: ".8rem" }}
+                      >
+                        <div className="avatar-container relative ">
+                          <span className="absolute z-20 h-[8px] w-[8px] bg-green-500 bottom-0 left-0 rounded-full"></span>
+                          <Avatar
+                            sx={{ height: "3.5rem", width: "3.5rem" }}
+                            className="bg-red-200 border-2 border-green-600"
+                            src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                          />
+                        </div>
+                        {/* each-chat-info */}
+                        <div className="each-chat-info ml-3 w-full">
+                          {/* username-time */}
+                          <div className="username-time flex justify-between">
+                            <p className="text-md text-black font-medium">
+                              {otherUserObject?.username}
+                            </p>
+                            <span className="text-xs text-gray-500">
+                              {(() => {
+                                let date = new Date(createdAt);
+                                let month = date.toLocaleString("en-US", {
+                                  month: "short",
+                                });
+                                let hour = date.getHours();
+                                let min = date.getMinutes();
+                                return `${month}, ${hour}:${min}`;
+                              })()}
+                            </span>
+                          </div>
+                          {/* chat-msg-noti */}
+                          <div className="chat-msg-noti flex justify-between">
+                            <p className="text-xs text-gray-600 font-light ">
+                              {latestMessage.length > 30
+                                ? `${latestMessage.substring(0, 30)} ...`
+                                : latestMessage}
+                            </p>
+                            {allConnectedUsers.some(
+                              (connectedUser: any) =>
+                                connectedUser._id === otherUserObject._id
+                            ) && (
+                              <span className="active-circle z-20 h-[13px] w-[13px] bg-gray-400 rounded-full"></span>
+                            )}
+                          </div>
+                        </div>
+                      </Button>
+                    );
+                  })}
                 </div>
-                {/* each-chat-info */}
-                <div className="each-chat-info ml-3 w-full">
-                  {/* username-time */}
-                  <div className="username-time flex justify-between">
-                    <p className="text-md text-black font-medium">
-                      {sessionData?.user?.username}
-                    </p>
-                    <span className="text-xs text-gray-500">1 : 30</span>
-                  </div>
-                  {/* chat-msg-noti */}
-                  <div className="chat-msg-noti flex justify-between">
-                    <p className="text-xs text-gray-600 font-light ">
-                      {"Hello, world! Lorem ipsum dolor sit amet consectetur".substring(
-                        0,
-                        30
-                      )}
-                      ...
-                    </p>
-                    <span className="z-20 h-[13px] w-[13px] bg-gray-400 rounded-full"></span>
-                  </div>
-                </div>
-              </Button>
-              {/* eeach single chat */}
-              <div className="each-chat flex">
-                <div className="avatar-container relative ">
-                  <span className="absolute z-20 h-[8px] w-[8px] bg-green-500 bottom-0 left-0 rounded-full"></span>
-                  <Avatar
-                    sx={{ height: "3.5rem", width: "3.5rem" }}
-                    className="bg-red-200 border-2 border-green-600"
-                    src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
-                  />
-                </div>
-                {/* each-chat-info */}
-                <div className="each-chat-info ml-3 w-full">
-                  {/* username-time */}
-                  <div className="username-time flex justify-between">
-                    <p className="text-md font-medium">
-                      {sessionData?.user?.username}
-                    </p>
-                    <span className="text-xs text-gray-500">1 : 30</span>
-                  </div>
-                  {/* chat-msg-noti */}
-                  <div className="chat-msg-noti flex justify-between">
-                    <p className="text-xs text-gray-600 font-light ">
-                      {"Hello, world! Lorem ipsum dolor sit amet consectetur".substring(
-                        0,
-                        30
-                      )}
-                      ...
-                    </p>
-                    <span className="z-20 h-[13px] w-[13px] bg-gray-400 rounded-full"></span>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </>
         )}
