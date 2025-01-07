@@ -18,7 +18,7 @@ const page = () => {
   const [selectedMenu, setselectedMenu] = useState("active");
   const [message, setmessage] = useState<string | undefined>("");
   const [sentBy, setsentBy] = useState<string | undefined>("");
-  const [receivedBy, setreceivedBy] = useState<string | null>(null);
+  const [receivedBy, setreceivedBy] = useState<string | undefined>("");
   const [receivedByObject, setreceivedByObject] = useState<any>(null);
   const [yourChats, setyourChats] = useState<any>([]);
 
@@ -34,7 +34,6 @@ const page = () => {
   const allConnectedUsers = useSelector(
     (state: any) => state.chatReducer.allConnectedUsers
   );
-  console.log(allConnectedUsers);
 
   //references
   const allMessagesContainerRef = useRef<any>(null);
@@ -69,7 +68,49 @@ const page = () => {
           createdAt,
         } = tempMessage;
 
-        setshowMessages((prev: any) => [...prev, tempMessage]);
+        let otherUserId =
+          sentByServer == sentBy ? receivedByServer : sentByServer;
+        let allConversations = JSON.parse(
+          localStorage.getItem("allConversations") || "{}"
+        );
+
+        // if convo already there then append
+        if (allConversations[otherUserId]) {
+          let newAllConversations = {
+            ...allConversations,
+            [otherUserId]: [...allConversations[otherUserId], tempMessage],
+          };
+          localStorage.setItem(
+            "allConversations",
+            JSON.stringify(newAllConversations)
+          );
+        }
+        // create new convo id with that user
+        else {
+          let newAllConversations = {
+            ...allConversations,
+            [otherUserId]: [tempMessage],
+          };
+          localStorage.setItem(
+            "allConversations",
+            JSON.stringify(newAllConversations)
+          );
+        }
+
+        // chat sent by me and received by receivedBy
+        // chat sent by receivedBt and received by me
+        if (
+          (sentByServer == sentBy && receivedByServer == receivedBy) ||
+          (sentByServer == receivedBy && receivedByServer == sentBy)
+        ) {
+          setshowMessages((prev: any) => {
+            return [...prev, tempMessage];
+          });
+        }
+
+        // if (sentByServer == sentBy && receivedByServer == receivedBy) {
+        //   setshowMessages((prev: any) => [...prev, tempMessage]);
+        // }
 
         const otherUserObject =
           sentByServer === sessionData?.user?._id
@@ -116,7 +157,7 @@ const page = () => {
     return () => {
       clientSocket?.disconnect();
     };
-  }, [sessionData?.user]);
+  }, [sessionData?.user, sentBy, receivedBy]);
 
   // useEffect for scroll
   useEffect(() => {
@@ -152,6 +193,20 @@ const page = () => {
     console.log("received by", receivedBy);
   }
 
+  // change showmessges if receivedby change
+  useEffect(() => {
+    if (receivedBy) {
+      let allConversations = JSON.parse(
+        localStorage.getItem("allConversations") || "{}"
+      );
+      if (allConversations[receivedBy]) {
+        setshowMessages(allConversations[receivedBy]);
+      } else {
+        setshowMessages([]);
+      }
+    }
+  }, [receivedBy]);
+
   if (!socket || status == "loading") return <p>Loading..</p>;
   return (
     <div className="main-continer flex w-full h-full md:w-[70vw] md:h-[90vh]">
@@ -160,7 +215,13 @@ const page = () => {
         {/* chat-header */}
         <div className="chat-bar-header h-[10dvh] flex items-center justify-between">
           <p className="text-3xl font-bold ">Chat.io</p>
-          <Button variant="grayvariant" onClick={() => signOut()}>
+          <Button
+            variant="grayvariant"
+            onClick={() => {
+              localStorage.removeItem("allConversations");
+              signOut();
+            }}
+          >
             <ExitToAppIcon />
           </Button>
         </div>

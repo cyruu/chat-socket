@@ -75,6 +75,7 @@ app.prepare().then(() => {
       connectedUsers = connectedUsers.filter(
         (eachConnectedUser) => eachConnectedUser.socketId != socket.id
       );
+
       io.emit("connected-users", connectedUsers);
     });
   });
