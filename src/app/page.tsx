@@ -11,6 +11,7 @@ import TextsmsIcon from "@mui/icons-material/Textsms";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
 import WavingHandIcon from "@mui/icons-material/WavingHand";
+import axios from "axios";
 
 const page = () => {
   // state variables
@@ -164,13 +165,13 @@ const page = () => {
     if (allMessagesContainerRef.current) {
       allMessagesContainerRef.current.scrollTo({
         top: allMessagesContainerRef.current.scrollHeight,
-        behavior: "smooth",
+        // behavior: "smooth",
       });
     }
   }, [showMessages.length]);
 
   // send message function
-  function sendMessage(e: React.FormEvent<HTMLFormElement>) {
+  async function sendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (componentClientSocket) {
       const tempMessage = {
@@ -188,6 +189,16 @@ const page = () => {
       };
 
       componentClientSocket.emit("send-message", tempMessage);
+      // data to database
+      const { data: resData } = await axios.post(
+        "api/messages/sendmessage",
+        tempMessage
+      );
+      if (resData.statusCode == 200) {
+        console.log("message sent");
+      } else {
+        console.log("message not sent");
+      }
     }
     console.log("sent by", sentBy);
     console.log("received by", receivedBy);

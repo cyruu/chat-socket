@@ -13,6 +13,12 @@ const MessageSchema = new mongoose.Schema(
     message: {
       type: String,
     },
+    sentByObject: {
+      type: Object,
+    },
+    receivedByObject: {
+      type: Object,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

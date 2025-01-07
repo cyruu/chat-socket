@@ -33,8 +33,6 @@ app.prepare().then(() => {
 
     // send-message
     socket.on("send-message", (tempMessage) => {
-      console.log(tempMessage);
-
       const {
         sentBy,
         sentByObject,
@@ -43,6 +41,7 @@ app.prepare().then(() => {
         message,
         isDeleted,
       } = tempMessage;
+
       // get socket id for sender and receiver from connectedUsers
       const senderSocketId = socket.id;
       // receiver is conncted to socket it gives socket it
