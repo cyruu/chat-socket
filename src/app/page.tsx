@@ -12,11 +12,12 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
 import WavingHandIcon from "@mui/icons-material/WavingHand";
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 
 const page = () => {
   // state variables
   const [showMessages, setshowMessages] = useState<any>([]);
-  const [selectedMenu, setselectedMenu] = useState("active");
+  const [selectedMenu, setselectedMenu] = useState("chats");
   const [message, setmessage] = useState<string | undefined>("");
   const [sentBy, setsentBy] = useState<string | undefined>("");
   const [receivedBy, setreceivedBy] = useState<string | undefined>("");
@@ -146,7 +147,10 @@ const page = () => {
           }
 
           // Sort the chats by createdAt (latest first).
-          return updatedChats.sort((a, b) => b.createdAt - a.createdAt);
+          return updatedChats.sort(
+            (a: any, b: any) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         });
       });
 
@@ -217,6 +221,73 @@ const page = () => {
       }
     }
   }, [receivedBy]);
+
+  async function getUserMessages() {
+    const { data: resData } = await axios.post("api/messages/getusermessages", {
+      sentBy,
+    });
+    const allMessages = resData.allMessages;
+
+    // for localstorate
+    let allConversations: any = {};
+    let yourChats: any = [];
+
+    // Iterate over all messages
+    allMessages.forEach((message: any) => {
+      let otherUserId =
+        message.sentBy === sentBy ? message.receivedBy : message.sentBy;
+      // for yourchats otherUserObject
+      const otherUserObject =
+        message.sentBy === sentBy
+          ? message.receivedByObject
+          : message.sentByObject;
+
+      // allconversatons operation start
+      if (!allConversations[otherUserId]) {
+        allConversations[otherUserId] = [];
+      }
+
+      allConversations[otherUserId].push(message);
+      // allconversatons operation end
+
+      // yourchats operation start
+      // Check if a chat with this user already exists in yourChats
+      const existingChatIndex = yourChats.findIndex(
+        (chat: any) => chat.otherUserObject._id === otherUserObject._id
+      );
+      if (existingChatIndex !== -1) {
+        // Update the latest message and createdAt for the existing chat
+        yourChats[existingChatIndex] = {
+          otherUserObject,
+          latestMessage: message.message,
+          createdAt: message.createdAt,
+        };
+      } else {
+        // Add a new chat entry for this user
+        yourChats.push({
+          otherUserObject,
+          latestMessage: message.message,
+          createdAt: message.createdAt,
+        });
+      }
+    });
+    yourChats.sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    // yourchat end
+
+    //outside foreach
+    localStorage.setItem("allConversations", JSON.stringify(allConversations));
+    // for yourchat
+    setyourChats(yourChats);
+  }
+  // inital load of messages
+  useEffect(() => {
+    if (sentBy) {
+      getUserMessages();
+    }
+  }, [sentBy]);
 
   if (!socket || status == "loading") return <p>Loading..</p>;
   return (
@@ -292,19 +363,40 @@ const page = () => {
                 <div className="all-chats ">
                   {yourChats.map((chat: any) => {
                     const { otherUserObject, latestMessage, createdAt } = chat;
+                    // console.log(chat);
+                    let userActive = allConnectedUsers.some(
+                      (connectedUser: any) =>
+                        connectedUser._id === otherUserObject._id
+                    );
+
                     // each chat
                     return (
                       <Button
+                        onClick={() => {
+                          console.log("clicket");
+
+                          setreceivedBy(otherUserObject?._id);
+                          setreceivedByObject(otherUserObject);
+                        }}
                         key={createdAt}
                         className="each-chat w-full bg-red-300+ flex"
                         variant="grayvariant"
                         sx={{ padding: ".4rem 0", marginBottom: ".8rem" }}
                       >
                         <div className="avatar-container relative ">
-                          <span className="absolute z-20 h-[8px] w-[8px] bg-green-500 bottom-0 left-0 rounded-full"></span>
+                          {userActive && (
+                            <span
+                              className={`absolute z-20 h-[8px] w-[8px] bg-green-500 bottom-0 left-0 rounded-full`}
+                            ></span>
+                          )}
+
                           <Avatar
                             sx={{ height: "3.5rem", width: "3.5rem" }}
-                            className="bg-red-200 border-2 border-green-600"
+                            className={`bg-red-200 border-2 ${
+                              userActive
+                                ? " border-green-600"
+                                : " border-gray-500"
+                            }`}
                             src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
                           />
                         </div>
@@ -321,9 +413,16 @@ const page = () => {
                                 let month = date.toLocaleString("en-US", {
                                   month: "short",
                                 });
-                                let hour = date.getHours();
-                                let min = date.getMinutes();
-                                return `${month}, ${hour}:${min}`;
+                                let hours = date.getHours();
+                                let minutes = date
+                                  .getMinutes()
+                                  .toString()
+                                  .padStart(2, "0");
+                                let period = hours >= 12 ? "PM" : "AM";
+
+                                hours = hours % 12 || 12;
+
+                                return `${month}, ${hours}:${minutes} ${period}`;
                               })()}
                             </span>
                           </div>
@@ -334,12 +433,8 @@ const page = () => {
                                 ? `${latestMessage.substring(0, 30)} ...`
                                 : latestMessage}
                             </p>
-                            {allConnectedUsers.some(
-                              (connectedUser: any) =>
-                                connectedUser._id === otherUserObject._id
-                            ) && (
-                              <span className="active-circle z-20 h-[13px] w-[13px] bg-gray-400 rounded-full"></span>
-                            )}
+
+                            {/* <span className="active-circle z-20 h-[10px] w-[10px] bg-gray-400 rounded-full"></span> */}
                           </div>
                         </div>
                       </Button>
@@ -448,7 +543,7 @@ const page = () => {
                   {showMessages.map((showMessage: any) => {
                     return (
                       <div
-                        key={showMessage?.createdAt}
+                        key={showMessage?.createdAt + "-" + uuidv4()}
                         className={`each-message max-w-[50%] w-max py-2 px-3 mb-2 rounded-xl  break-words ${
                           showMessage.sentBy == sessionData?.user?._id
                             ? " ml-auto bg-blue-400 text-sm  text-white"
