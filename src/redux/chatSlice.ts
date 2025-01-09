@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 interface iChatState {
-  allConnectedUsers: String[] | null;
+  allConnectedUsers: string[] | null;
 }
 
 const chatSlice = createSlice({
