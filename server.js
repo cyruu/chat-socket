@@ -4,8 +4,10 @@ import { Server } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = 3000;
+
+// Use the PORT environment variable provided by Render (or default to 3000 for local development)
+const port = process.env.PORT || 3000; // This will be set by Render in production
+const hostname = dev ? "localhost" : "0.0.0.0";
 // when using middleware `hostname` and `port` must be provided below
 const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
