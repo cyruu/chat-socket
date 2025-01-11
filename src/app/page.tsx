@@ -1,7 +1,7 @@
 "use client";
 import { setAllConnectedUsers } from "@/redux/chatSlice";
 import { setSocket } from "@/redux/socketSlice";
-import { Avatar, Button, TextField } from "@mui/material";
+import { Avatar, Button, Modal, TextField } from "@mui/material";
 import { signOut, useSession } from "next-auth/react";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,6 +15,8 @@ import PersonOffIcon from "@mui/icons-material/PersonOff";
 import CommentsDisabledIcon from "@mui/icons-material/CommentsDisabled";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import { notify } from "@/utils/notify";
+import { useRouter } from "next/navigation";
 
 const page = () => {
   // state variables
@@ -29,6 +31,9 @@ const page = () => {
   const [receivedBy, setreceivedBy] = useState<string | undefined>("");
   const [receivedByObject, setreceivedByObject] = useState<any>(null);
   const [yourChats, setyourChats] = useState<any>([]);
+
+  //router
+  const router = useRouter();
 
   // clientSocket for component
   const [componentClientSocket, setcomponentClientSocket] = useState<any>(null);
@@ -45,6 +50,28 @@ const page = () => {
 
   //references
   const allMessagesContainerRef = useRef<any>(null);
+  const mainContainerRef = useRef<any>(null);
+
+  //modal states
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const scrollToRight = () => {
+    if (mainContainerRef.current) {
+      mainContainerRef.current.scrollTo({
+        left: mainContainerRef.current.scrollWidth,
+      });
+    }
+  };
+
+  const scrollToLeft = () => {
+    if (mainContainerRef.current) {
+      mainContainerRef.current.scrollTo({
+        left: 0,
+      });
+    }
+  };
 
   // serach input debounce
   useEffect(() => {
@@ -333,21 +360,51 @@ const page = () => {
 
   if (!socket || status == "loading") return <p>Loading..</p>;
   return (
-    <div className="main-continer flex w-full h-full md:w-[70vw] md:h-[90vh]">
-      {/* chat-container */}
-      <div className="chat-bar h-[100dvh] px-5 bg-white w-full md:w-1/2 md:h-full md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[35%]">
+    <div
+      ref={mainContainerRef}
+      className="main-container overflow-x-auto h-[100dvh] overflow-y-hidden snap-x snap-mandator flex scroll-smooth md:items-center md:justify-center md:w-[70vw] md:h-[90vh]"
+    >
+      {/*mainnn chat-container */}
+      <div className="chat-bar bg-white flex-shrink-0 w-screen h-screen px-5 snap-start md:flex-shrink  md:w-1/2 md:h-full md:rounded-xl md:shadow-lg xl:w-[35%]">
         {/* chat-header */}
         <div className="chat-bar-header h-[10dvh] flex items-center justify-between">
           <p className="text-3xl font-bold ">Chat.io</p>
-          <Button
-            variant="grayvariant"
-            onClick={() => {
-              localStorage.removeItem("allConversations");
-              signOut();
-            }}
+          <Button onClick={handleOpen}>Open modal</Button>
+          <Modal
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+            className="flex items-center justify-center"
           >
-            <ExitToAppIcon />
-          </Button>
+            <div className="bg-white p-10 px-14 rounded-xl text-center shadow-lg">
+              <p className="mb-4">Confirm Logout?</p>
+              <Button
+                sx={{
+                  background: "gray",
+                  color: "white",
+                  marginRight: ".6rem",
+                }}
+                onClick={async () => {
+                  localStorage.removeItem("allConversations");
+                  const { data: resData } = await axios.get("api/users/logout");
+
+                  notify(resData.msg, resData.statusCode);
+                  router.push("/login");
+                }}
+              >
+                Logout
+              </Button>
+              <Button
+                variant="outlined"
+                sx={{ color: "gray", marginLeft: ".6rem" }}
+                onClick={handleClose}
+              >
+                Cancel
+              </Button>
+            </div>
+          </Modal>
+          <ExitToAppIcon />
         </div>
         {/* your info */}
         <div className="your-info flex">
@@ -564,7 +621,7 @@ const page = () => {
                 value={searchInput}
                 onChange={({ target }) => setsearchInput(target.value)}
                 placeholder="search..."
-                className="w-full px-5  py-2 text-xs bg-gray-200 text-gray-500 outline-none rounded-full md:text-sm"
+                className="w-full px-5  py-3 text-xs bg-gray-200 text-gray-500 outline-none rounded-full md:text-sm"
               />
             </div>
             {searchInput.trim() == "" ? (
@@ -600,6 +657,7 @@ const page = () => {
                             email: user.email,
                             _id: user._id,
                           });
+                          scrollToRight();
                         }}
                         key={user._id}
                         className="each-chat w-full bg-red-300+ flex"
@@ -646,8 +704,8 @@ const page = () => {
           </div>
         )}
       </div>
-      {/* message-side-container */}
-      <div className="message-side-container  flex-col h-full flex w-full md:w-1/2 ml-3 bg-white rounded-xl shadow-lg lf xl:w-[65%]">
+      {/*mainnn message-side-container */}
+      <div className="message-side-container bg-white flex-shrink-0 w-screen flex-col h-full flex snap-start md:flex-shrink md:rounded-xl md:w-1/2 md:ml-3 xl:w-[65%]">
         {receivedBy && receivedByObject ? (
           <>
             {/* message header */}
@@ -671,7 +729,12 @@ const page = () => {
                 </div>
               </div>
               {/* close button for mobile */}
-              <Button variant="grayvariant">
+              <Button
+                variant="grayvariant"
+                onClick={() => {
+                  scrollToLeft();
+                }}
+              >
                 <ArrowBackIcon />
               </Button>
             </div>
@@ -725,7 +788,18 @@ const page = () => {
             </form>
           </>
         ) : (
-          "not selected"
+          <div className="h-full w-full flex flex-col items-center justify-center ">
+            <p className="font-bold text-gray-500 text-lg">Select a convo</p>
+            <button
+              onClick={() => {
+                setselectedMenu("chats");
+                scrollToLeft();
+              }}
+              className={`mt-2 bg-gray-400 text-sm px-4 py-2 rounded-full text-white  shadow-md`}
+            >
+              Les goo
+            </button>
+          </div>
         )}
       </div>
     </div>
