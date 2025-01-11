@@ -11,11 +11,17 @@ import TextsmsIcon from "@mui/icons-material/Textsms";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
 import WavingHandIcon from "@mui/icons-material/WavingHand";
+import PersonOffIcon from "@mui/icons-material/PersonOff";
+import CommentsDisabledIcon from "@mui/icons-material/CommentsDisabled";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 
 const page = () => {
   // state variables
+
+  const [searchInput, setsearchInput] = useState<any>("");
+  const [defaultSearchUsers, setdefaultSearchUsers] = useState<any>([]);
+  const [searchUsers, setsearchUsers] = useState<any>([]);
   const [showMessages, setshowMessages] = useState<any>([]);
   const [selectedMenu, setselectedMenu] = useState("chats");
   const [message, setmessage] = useState<string | undefined>("");
@@ -40,6 +46,26 @@ const page = () => {
   //references
   const allMessagesContainerRef = useRef<any>(null);
 
+  // serach input debounce
+  useEffect(() => {
+    if (searchInput.trim() === "") {
+      // dfault search usrs
+      setsearchUsers(defaultSearchUsers);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      const allUsers = JSON.parse(localStorage.getItem("allUsers") || "[]");
+      let searchUsers = allUsers.filter((user: any) =>
+        user.username.toLowerCase().includes(searchInput.toLowerCase())
+      );
+      setsearchUsers(searchUsers);
+    }, 100);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [searchInput, defaultSearchUsers]);
+
+  // socket use effect
   useEffect(() => {
     //set sentby to session user id
     if (sessionData?.user) {
@@ -198,6 +224,7 @@ const page = () => {
         "api/messages/sendmessage",
         tempMessage
       );
+      setmessage("");
       if (resData.statusCode == 200) {
         console.log("message sent");
       } else {
@@ -289,11 +316,26 @@ const page = () => {
     }
   }, [sentBy]);
 
+  // get all users
+  async function getAllUsers() {
+    const { data: resData } = await axios.get("api/users/getallusers");
+
+    if (resData.statusCode == 200) {
+      localStorage.setItem("allUsers", JSON.stringify(resData.allUsers));
+      setdefaultSearchUsers(resData.allUsers.slice(0, 5));
+    }
+  }
+
+  // inital fetch all users to show in search
+  useEffect(() => {
+    getAllUsers();
+  }, []);
+
   if (!socket || status == "loading") return <p>Loading..</p>;
   return (
     <div className="main-continer flex w-full h-full md:w-[70vw] md:h-[90vh]">
       {/* chat-container */}
-      <div className="chat-bar h-[100dvh] px-5  w-full md:w-1/2 md:h-full md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[35%]">
+      <div className="chat-bar h-[100dvh] px-5 bg-white w-full md:w-1/2 md:h-full md:bg-white md:rounded-xl md:shadow-lg lf xl:w-[35%]">
         {/* chat-header */}
         <div className="chat-bar-header h-[10dvh] flex items-center justify-between">
           <p className="text-3xl font-bold ">Chat.io</p>
@@ -323,7 +365,7 @@ const page = () => {
           </div>
         </div>
         {/* menu-tabs */}
-        <div className="menu-tabs flex justify-around bg-gray-300 items-center h-[6dvh] my-4 rounded-full">
+        <div className="menu-tabs flex justify-around bg-gray-300 items-center h-[6dvh] my-3 rounded-full">
           <button
             onClick={() => setselectedMenu("chats")}
             className={`text-xs px-4 py-1 rounded-xl text-black shadow-md ${
@@ -354,11 +396,22 @@ const page = () => {
         {/* chats */}
         {selectedMenu == "chats" && (
           <>
-            <p className="mb-1">Your Chats</p>
+            <p className="mb-1 text-sm text-gray-500 font-bold">Your Chats</p>
             {/* all chat container */}
             <div className="all-chat-container flex flex-col">
               {yourChats.length == 0 ? (
-                <p>No chats yet</p>
+                <div className="w-max mx-auto text-center mt-6">
+                  <CommentsDisabledIcon sx={{ color: "gray" }} />
+                  <p className="text-xs text-gray-500 mt-2">
+                    No chats yet. Start one now!
+                  </p>
+                  <button
+                    onClick={() => setselectedMenu("search")}
+                    className={`mt-3 bg-gray-400 text-sm px-4 py-2 rounded-full text-white  shadow-md`}
+                  >
+                    Find people
+                  </button>
+                </div>
               ) : (
                 <div className="all-chats ">
                   {yourChats.map((chat: any) => {
@@ -373,15 +426,13 @@ const page = () => {
                     return (
                       <Button
                         onClick={() => {
-                          console.log("clicket");
-
                           setreceivedBy(otherUserObject?._id);
                           setreceivedByObject(otherUserObject);
                         }}
                         key={createdAt}
                         className="each-chat w-full bg-red-300+ flex"
                         variant="grayvariant"
-                        sx={{ padding: ".4rem 0", marginBottom: ".8rem" }}
+                        sx={{ padding: ".4rem 0", marginBottom: ".4rem" }}
                       >
                         <div className="avatar-container relative ">
                           {userActive && (
@@ -448,53 +499,151 @@ const page = () => {
         {/* active users */}
         {selectedMenu == "active" && (
           <div className="active-container mb-4">
-            <p className="mb-4">Active Users</p>
-            <div className="active-users-container grid grid-cols-2 gap-5 ">
-              {allConnectedUsers.map((connectedUser: any) => {
-                if (connectedUser.socketId != socket.id) {
-                  // if (true) {
-                  return (
-                    <div
-                      key={connectedUser?._id}
-                      className=" flex flex-col items-center"
-                    >
-                      <div className="active-user relative ">
-                        <span className="absolute z-20 h-[10px] w-[10px] bg-green-500 bottom-0 left-0 rounded-full"></span>
-                        <Avatar
-                          sx={{ height: "5rem", width: "5rem" }}
-                          className="bg-red-200 border-2 border-green-600 mb-2"
-                          src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
-                        />
-                      </div>
-                      <p className="mb-2 text-sm">{connectedUser?.username}</p>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        sx={{ background: "gray" }}
-                        className="w-[80%] mx-auto"
-                        onClick={() => {
-                          setreceivedBy(connectedUser?._id);
-                          setreceivedByObject(connectedUser);
-                        }}
+            <p className="mb-4 text-sm text-gray-500 font-bold">Active Users</p>
+            {allConnectedUsers.length == 0 ? (
+              <div className="w-max mx-auto text-center mt-7">
+                <PersonOffIcon sx={{ color: "gray" }} />
+                <p className="text-xs text-gray-500">No active users</p>
+              </div>
+            ) : (
+              <div className="active-users-container grid grid-cols-2 gap-5 ">
+                {allConnectedUsers.map((connectedUser: any) => {
+                  if (connectedUser.socketId != socket.id) {
+                    // if (true) {
+                    console.log(connectedUser);
+
+                    return (
+                      <div
+                        key={connectedUser?._id}
+                        className=" flex flex-col items-center"
                       >
-                        <TextsmsIcon
-                          className="mr-2"
-                          sx={{ fontSize: "1rem" }}
-                        />
-                        <span>Message</span>
-                      </Button>
-                    </div>
-                  );
-                }
-              })}
-            </div>
+                        <div className="active-user relative ">
+                          <span className="absolute z-20 h-[10px] w-[10px] bg-green-500 bottom-0 left-0 rounded-full"></span>
+                          <Avatar
+                            sx={{ height: "5rem", width: "5rem" }}
+                            className="bg-red-200 border-2 border-green-600 mb-2"
+                            src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                          />
+                        </div>
+                        <p className="mb-2 text-sm">
+                          {connectedUser?.username}
+                        </p>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{ background: "gray" }}
+                          className="w-[80%] mx-auto"
+                          onClick={() => {
+                            setreceivedBy(connectedUser?._id);
+                            setreceivedByObject(connectedUser);
+                          }}
+                        >
+                          <TextsmsIcon
+                            className="mr-2"
+                            sx={{ fontSize: "1rem" }}
+                          />
+                          <span>Message</span>
+                        </Button>
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+            )}
           </div>
         )}
         {/* search */}
         {selectedMenu == "search" && (
-          <>
-            <p>Search</p>
-          </>
+          <div>
+            <p className="mb-2 text-sm text-gray-500 font-bold">
+              Search people
+            </p>
+            <div className="searchbar bg-">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={({ target }) => setsearchInput(target.value)}
+                placeholder="search..."
+                className="w-full px-5  py-2 text-xs bg-gray-200 text-gray-500 outline-none rounded-full md:text-sm"
+              />
+            </div>
+            {searchInput.trim() == "" ? (
+              <p className="text-gray-600 text-xs mt-3 mb-1 font-medium">
+                You may know
+              </p>
+            ) : (
+              <p className="text-gray-600 text-xs mt-3 mb-1 font-medium">
+                Searching : <span className="font-bold">{searchInput}</span>
+              </p>
+            )}
+            <div className="search-results">
+              {/* searchuser not found */}
+              {searchUsers.length == 0 ? (
+                <div className="w-max mx-auto text-center mt-7">
+                  <PersonOffIcon sx={{ color: "gray" }} />
+                  <p className="text-xs text-gray-500">User not found</p>
+                </div>
+              ) : (
+                <div className="search-users">
+                  {searchUsers.map((user: any) => {
+                    let userActive = allConnectedUsers.some(
+                      (connectedUser: any) => connectedUser._id === user._id
+                    );
+                    return (
+                      <Button
+                        onClick={() => {
+                          console.log("clicket");
+
+                          setreceivedBy(user?._id);
+                          setreceivedByObject({
+                            username: user.username,
+                            email: user.email,
+                            _id: user._id,
+                          });
+                        }}
+                        key={user._id}
+                        className="each-chat w-full bg-red-300+ flex"
+                        variant="grayvariant"
+                        sx={{ padding: ".4rem 0", marginBottom: "0rem" }}
+                      >
+                        <div className="avatar-container relative ">
+                          {userActive && (
+                            <span
+                              className={`absolute z-20 h-[8px] w-[8px] bg-green-500 bottom-0 left-0 rounded-full`}
+                            ></span>
+                          )}
+
+                          <Avatar
+                            sx={{ height: "3rem", width: "3rem" }}
+                            className={`bg-red-200 border-2 ${
+                              userActive
+                                ? " border-green-600"
+                                : " border-gray-500"
+                            }`}
+                            src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                          />
+                        </div>
+                        {/* each-chat-info */}
+                        <div className="each-chat-info ml-3 w-full">
+                          {/* username-time */}
+                          <div className="username-time flex justify-between">
+                            <p className="text-md text-black font-medium">
+                              {user?.username}
+                            </p>
+                          </div>
+                        </div>
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
+              {searchInput.trim() == "" && (
+                <p className="text-xs mx-auto mt-4 w-max text-gray-500">
+                  Search for someone cool.
+                </p>
+              )}
+            </div>
+          </div>
         )}
       </div>
       {/* message-side-container */}
