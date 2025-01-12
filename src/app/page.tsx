@@ -13,6 +13,7 @@ import SendIcon from "@mui/icons-material/Send";
 import WavingHandIcon from "@mui/icons-material/WavingHand";
 import PersonOffIcon from "@mui/icons-material/PersonOff";
 import CommentsDisabledIcon from "@mui/icons-material/CommentsDisabled";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { notify } from "@/utils/notify";
@@ -25,7 +26,7 @@ const page = () => {
   const [defaultSearchUsers, setdefaultSearchUsers] = useState<any>([]);
   const [searchUsers, setsearchUsers] = useState<any>([]);
   const [showMessages, setshowMessages] = useState<any>([]);
-  const [selectedMenu, setselectedMenu] = useState("chats");
+  const [selectedMenu, setselectedMenu] = useState("search");
   const [message, setmessage] = useState<string | undefined>("");
   const [sentBy, setsentBy] = useState<string | undefined>("");
   const [receivedBy, setreceivedBy] = useState<string | undefined>("");
@@ -51,6 +52,7 @@ const page = () => {
   //references
   const allMessagesContainerRef = useRef<any>(null);
   const mainContainerRef = useRef<any>(null);
+  const messageRef = useRef<any>(null);
 
   //modal states
   const [open, setOpen] = React.useState(false);
@@ -485,6 +487,7 @@ const page = () => {
                         onClick={() => {
                           setreceivedBy(otherUserObject?._id);
                           setreceivedByObject(otherUserObject);
+                          scrollToRight();
                         }}
                         key={createdAt}
                         className="each-chat w-full bg-red-300+ flex"
@@ -557,7 +560,7 @@ const page = () => {
         {selectedMenu == "active" && (
           <div className="active-container mb-4">
             <p className="mb-4 text-sm text-gray-500 font-bold">Active Users</p>
-            {allConnectedUsers.length == 0 ? (
+            {allConnectedUsers.length <= 1 ? (
               <div className="w-max mx-auto text-center mt-7">
                 <PersonOffIcon sx={{ color: "gray" }} />
                 <p className="text-xs text-gray-500">No active users</p>
@@ -755,14 +758,39 @@ const page = () => {
                   {showMessages.map((showMessage: any) => {
                     return (
                       <div
+                        ref={messageRef}
                         key={showMessage?.createdAt + "-" + uuidv4()}
-                        className={`each-message max-w-[50%] w-max py-2 px-3 mb-2 rounded-xl  break-words ${
+                        className={`  flex ${
                           showMessage.sentBy == sessionData?.user?._id
-                            ? " ml-auto bg-blue-400 text-sm  text-white"
-                            : " mr-auto bg-gray-200 text-sm  text-gray-500"
+                            ? " justify-end"
+                            : " justify-start"
                         }`}
                       >
-                        {showMessage?.message}
+                        <div className=" bg-red-500 flex max-w-[50%] group">
+                          {showMessage.sentBy == sessionData?.user?._id && (
+                            <span className="cursor-pointer">
+                              <MoreVertIcon
+                                sx={{ color: "gray", fontSize: "1.2rem" }}
+                              />
+                            </span>
+                          )}
+                          <div
+                            className={`each-message py-2 px-3 mb-2 rounded-xl max-w-full w-max break-words ${
+                              showMessage.sentBy == sessionData?.user?._id
+                                ? " bg-blue-400 text-sm text-white"
+                                : " bg-gray-200 text-sm text-gray-500"
+                            }`}
+                          >
+                            {showMessage?.message}
+                          </div>
+                          {showMessage.sentBy != sessionData?.user?._id && (
+                            <span className="cursor-pointer hidden group-hover:block">
+                              <MoreVertIcon
+                                sx={{ color: "gray", fontSize: "1.2rem" }}
+                              />
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

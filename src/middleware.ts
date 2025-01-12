@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!token && !publicRoutes.includes(path)) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // return NextResponse.redirect(new URL("/login", request.url));
   }
   return NextResponse.next();
 }
