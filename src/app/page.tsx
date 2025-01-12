@@ -29,9 +29,11 @@ const page = () => {
   const [selectedMenu, setselectedMenu] = useState("search");
   const [message, setmessage] = useState<string | undefined>("");
   const [sentBy, setsentBy] = useState<string | undefined>("");
-  const [receivedBy, setreceivedBy] = useState<string | undefined>("");
+  const [receivedBy, setreceivedBy] = useState<any>("");
   const [receivedByObject, setreceivedByObject] = useState<any>(null);
   const [yourChats, setyourChats] = useState<any>([]);
+  const [messagePopUp, setmessagePopUp] = useState<any>(false);
+  const [selectedMessageDate, setselectedMessageDate] = useState<any>("");
 
   //router
   const router = useRouter();
@@ -74,6 +76,74 @@ const page = () => {
       });
     }
   };
+
+  function closeMessagePopUp() {
+    setmessagePopUp(false);
+    setselectedMessageDate("");
+  }
+  useEffect(() => {
+    document.addEventListener("click", closeMessagePopUp);
+    return () => {
+      document.removeEventListener("click", closeMessagePopUp);
+    };
+  }, []);
+  // handle delete message
+  async function handleDeleteMessage(showMessage: any) {
+    const { data: resData } = await axios.post(
+      "api/messages/deletemessage",
+      showMessage
+    );
+    if (resData.statusCode != 200) {
+      notify(resData.msg, resData.statusCode);
+      return;
+    }
+
+    // update your chats to show msg delted
+    setyourChats((prev: any) => {
+      let tempyourchats = [...prev];
+      console.log(tempyourchats);
+      tempyourchats = tempyourchats.map((chat: any) => {
+        if (chat.createdAt == showMessage.createdAt) {
+          return {
+            ...chat,
+            isDeleted: true,
+          };
+        } else {
+          return chat;
+        }
+      });
+      console.log(tempyourchats);
+
+      return tempyourchats;
+    });
+    //update state
+    setshowMessages((prev: any) => {
+      const tempshowMessages = [...prev];
+      const newshowMessages = tempshowMessages.map((message: any) => {
+        if (message.createdAt != showMessage.createdAt) {
+          return message;
+        } else {
+          return {
+            ...message,
+            isDeleted: true,
+          };
+        }
+      });
+      // update localstorage
+      let allConversations = JSON.parse(
+        localStorage.getItem("allConversations") || "{}"
+      );
+      allConversations = {
+        ...allConversations,
+        [receivedBy]: newshowMessages,
+      };
+      localStorage.setItem(
+        "allConversations",
+        JSON.stringify(allConversations)
+      );
+      return newshowMessages;
+    });
+  }
 
   // serach input debounce
   useEffect(() => {
@@ -123,6 +193,7 @@ const page = () => {
           receivedByObject,
           message,
           createdAt,
+          isDeleted,
         } = tempMessage;
 
         let otherUserId =
@@ -188,6 +259,7 @@ const page = () => {
               ...updatedChats[existingChatIndex],
               latestMessage: message,
               createdAt,
+              isDeleted,
             };
           } else {
             // Chat does not exist, add a new one.
@@ -197,6 +269,7 @@ const page = () => {
                 otherUserObject,
                 latestMessage: message,
                 createdAt,
+                isDeleted,
               },
             ];
           }
@@ -245,6 +318,7 @@ const page = () => {
         message,
         //default isDeleted false
         isDeleted: false,
+        createdAt: Date.now(),
       };
 
       componentClientSocket.emit("send-message", tempMessage);
@@ -253,6 +327,7 @@ const page = () => {
         "api/messages/sendmessage",
         tempMessage
       );
+
       setmessage("");
       if (resData.statusCode == 200) {
         console.log("message sent");
@@ -474,7 +549,14 @@ const page = () => {
               ) : (
                 <div className="all-chats ">
                   {yourChats.map((chat: any) => {
-                    const { otherUserObject, latestMessage, createdAt } = chat;
+                    console.log(chat);
+
+                    const {
+                      otherUserObject,
+                      latestMessage,
+                      createdAt,
+                      isDeleted,
+                    } = chat;
                     // console.log(chat);
                     let userActive = allConnectedUsers.some(
                       (connectedUser: any) =>
@@ -539,11 +621,17 @@ const page = () => {
                           </div>
                           {/* chat-msg-noti */}
                           <div className="chat-msg-noti flex justify-between">
-                            <p className="text-xs text-gray-600 font-light ">
-                              {latestMessage.length > 30
-                                ? `${latestMessage.substring(0, 30)} ...`
-                                : latestMessage}
-                            </p>
+                            {isDeleted ? (
+                              <p className="text-xs text-gray-600 font-light ">
+                                Message Deleted
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-600 font-light ">
+                                {latestMessage.length > 30
+                                  ? `${latestMessage.substring(0, 30)} ...`
+                                  : latestMessage}
+                              </p>
+                            )}
 
                             {/* <span className="active-circle z-20 h-[10px] w-[10px] bg-gray-400 rounded-full"></span> */}
                           </div>
@@ -766,30 +854,58 @@ const page = () => {
                             : " justify-start"
                         }`}
                       >
-                        <div className=" bg-red-500 flex max-w-[50%] group">
+                        <div className=" flex items-start relative max-w-[50%] group">
                           {showMessage.sentBy == sessionData?.user?._id && (
-                            <span className="cursor-pointer">
+                            <button
+                              onFocus={() => {
+                                setmessagePopUp(true);
+                                setselectedMessageDate(showMessage.createdAt);
+                              }}
+                              className="cursor-pointer hidden group-hover:block"
+                            >
                               <MoreVertIcon
                                 sx={{ color: "gray", fontSize: "1.2rem" }}
                               />
-                            </span>
+                            </button>
                           )}
+                          {/* pop up */}
+                          {messagePopUp &&
+                            new Date(selectedMessageDate).getTime() ==
+                              new Date(showMessage.createdAt).getTime() && (
+                              <div className="absolute flex flex-col items-start -left-[85px] -top-1 bg-gray-100 border shadow-md rounded-md overflow-hidden z-10 ">
+                                <button
+                                  className="text-xs text-gray-600 px-4 py-1 w-full hover:bg-gray-300"
+                                  onClick={() =>
+                                    handleDeleteMessage(showMessage)
+                                  }
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  className="text-xs text-gray-600 px-4 py-1 hover:bg-gray-300"
+                                  onClick={closeMessagePopUp}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                          {/* main message */}
                           <div
                             className={`each-message py-2 px-3 mb-2 rounded-xl max-w-full w-max break-words ${
                               showMessage.sentBy == sessionData?.user?._id
-                                ? " bg-blue-400 text-sm text-white"
-                                : " bg-gray-200 text-sm text-gray-500"
-                            }`}
+                                ? " bg-blue-400 text-sm text-white "
+                                : " bg-gray-200 text-sm text-gray-500 "
+                            }
+                            
+                              
+                            `}
                           >
-                            {showMessage?.message}
+                            {showMessage.isDeleted ? (
+                              <span>Message Deleted</span>
+                            ) : (
+                              <span>{showMessage?.message}</span>
+                            )}
                           </div>
-                          {showMessage.sentBy != sessionData?.user?._id && (
-                            <span className="cursor-pointer hidden group-hover:block">
-                              <MoreVertIcon
-                                sx={{ color: "gray", fontSize: "1.2rem" }}
-                              />
-                            </span>
-                          )}
                         </div>
                       </div>
                     );

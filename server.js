@@ -42,6 +42,7 @@ app.prepare().then(() => {
         receivedByObject,
         message,
         isDeleted,
+        createdAt,
       } = tempMessage;
 
       // get socket id for sender and receiver from connectedUsers
@@ -57,7 +58,6 @@ app.prepare().then(() => {
       if (receiverSocketId) {
         socket.to(receiverSocketId).emit("receive-message-from-server", {
           ...tempMessage,
-          createdAt: Date.now(),
         });
       }
 
@@ -66,7 +66,6 @@ app.prepare().then(() => {
       // to update message state in frontend
       socket.emit("receive-message-from-server", {
         ...tempMessage,
-        createdAt: Date.now(),
       });
     });
 

@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
       sentByObject,
       receivedByObject,
       isDeleted,
+      createdAt,
     } = await req.json();
 
     const msg = new MessageModel({
@@ -21,8 +22,10 @@ export async function POST(req: NextRequest) {
       sentByObject,
       receivedByObject,
       isDeleted,
+      createdAt,
     });
     const messageSaved = await msg.save();
+
     if (messageSaved) {
       return NextResponse.json({
         msg: "Message sent",

@@ -1,31 +1,31 @@
 import mongoose from "mongoose";
 
-const MessageSchema = new mongoose.Schema(
-  {
-    sentBy: {
-      type: mongoose.Types.ObjectId,
-      ref: "users",
-    },
-    receivedBy: {
-      type: mongoose.Types.ObjectId,
-      ref: "users",
-    },
-    message: {
-      type: String,
-    },
-    sentByObject: {
-      type: Object,
-    },
-    receivedByObject: {
-      type: Object,
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
+const MessageSchema = new mongoose.Schema({
+  sentBy: {
+    type: mongoose.Types.ObjectId,
+    ref: "users",
   },
-  { timestamps: true }
-);
+  receivedBy: {
+    type: mongoose.Types.ObjectId,
+    ref: "users",
+  },
+  message: {
+    type: String,
+  },
+  sentByObject: {
+    type: Object,
+  },
+  receivedByObject: {
+    type: Object,
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Number,
+  },
+});
 
 // Define the Message model (with capitalization)
 const Message =
