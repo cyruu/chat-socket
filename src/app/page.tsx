@@ -170,7 +170,7 @@ const page = () => {
     if (sessionData?.user) {
       setsentBy(sessionData?.user?._id);
     }
-    const clientSocket = io("https://chat-socket-bt91.onrender.com");
+    const clientSocket = io("https://chat-socket-h3wn.onrender.com");
     // on socket connection
     clientSocket.on("connect", () => {
       // set to componentClientSocket

@@ -15,7 +15,13 @@ const handler = app.getRequestHandler();
 app.prepare().then(() => {
   const httpServer = createServer(handler);
 
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "*", // Replace '*' with specific origin(s) in production for security
+      methods: ["GET", "POST"], // Allowed HTTP methods
+      credentials: true, // Allow credentials (cookies, headers, etc.)
+    },
+  });
 
   let connectedUsers = [];
   io.on("connection", (socket) => {
