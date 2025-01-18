@@ -26,7 +26,7 @@ const page = () => {
   const [defaultSearchUsers, setdefaultSearchUsers] = useState<any>([]);
   const [searchUsers, setsearchUsers] = useState<any>([]);
   const [showMessages, setshowMessages] = useState<any>([]);
-  const [selectedMenu, setselectedMenu] = useState("search");
+  const [selectedMenu, setselectedMenu] = useState("chats");
   const [message, setmessage] = useState<string | undefined>("");
   const [sentBy, setsentBy] = useState<string | undefined>("");
   const [receivedBy, setreceivedBy] = useState<any>("");
@@ -439,14 +439,16 @@ const page = () => {
   return (
     <div
       ref={mainContainerRef}
-      className="main-container overflow-x-auto h-[100dvh] overflow-y-hidden snap-x snap-mandator flex scroll-smooth md:items-center md:justify-center md:w-[70vw] md:h-[90vh]"
+      className="main-container overflow-x-auto h-[100dvh]  snap-x snap-mandator flex scroll-smooth md:items-center md:justify-center md:w-[70vw] md:h-[90vh]"
     >
       {/*mainnn chat-container */}
-      <div className="chat-bar bg-white flex-shrink-0 w-screen h-screen px-5 snap-start md:flex-shrink  md:w-1/2 md:h-full md:rounded-xl md:shadow-lg xl:w-[35%]">
+      <div className="chat-bar bg-white overflow-y-auto scrollbar-hide  flex-shrink-0 w-screen h-screen px-5 snap-start md:flex-shrink  md:w-1/2 md:h-full md:rounded-xl md:shadow-lg xl:w-[35%]">
         {/* chat-header */}
-        <div className="chat-bar-header h-[10dvh] flex items-center justify-between">
+        <div className="chat-bar-header h-[8dvh] flex items-center justify-between">
           <p className="text-3xl font-bold ">Chat.io</p>
-          <Button onClick={handleOpen}>Open modal</Button>
+          <Button variant="grayvariant" onClick={handleOpen}>
+            <ExitToAppIcon />
+          </Button>
           <Modal
             open={open}
             onClose={handleClose}
@@ -481,7 +483,6 @@ const page = () => {
               </Button>
             </div>
           </Modal>
-          <ExitToAppIcon />
         </div>
         {/* your info */}
         <div className="your-info flex">
@@ -490,7 +491,7 @@ const page = () => {
             <Avatar
               sx={{ height: "3.5rem", width: "3.5rem" }}
               className="bg-red-200 border-2 border-green-600"
-              src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+              src=""
             />
           </div>
           <div className="info ml-3">
@@ -525,12 +526,20 @@ const page = () => {
             Search
           </button>
         </div>
-
+        {/* text */}
+        <p className="mb-1 text-sm text-gray-500 font-bold">
+          {selectedMenu == "chats"
+            ? "Your chats"
+            : selectedMenu == "active"
+            ? "Active users"
+            : selectedMenu == "search"
+            ? "Search people"
+            : "Search people"}
+        </p>
         {/* main content on the basis of selectedMenu */}
         {/* chats */}
         {selectedMenu == "chats" && (
           <>
-            <p className="mb-1 text-sm text-gray-500 font-bold">Your Chats</p>
             {/* all chat container */}
             <div className="all-chat-container flex flex-col">
               {yourChats.length == 0 ? (
@@ -547,7 +556,7 @@ const page = () => {
                   </button>
                 </div>
               ) : (
-                <div className="all-chats ">
+                <div className="all-chats  ">
                   {yourChats.map((chat: any) => {
                     console.log(chat);
 
@@ -590,7 +599,7 @@ const page = () => {
                                 ? " border-green-600"
                                 : " border-gray-500"
                             }`}
-                            src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                            src=""
                           />
                         </div>
                         {/* each-chat-info */}
@@ -647,7 +656,6 @@ const page = () => {
         {/* active users */}
         {selectedMenu == "active" && (
           <div className="active-container mb-4">
-            <p className="mb-4 text-sm text-gray-500 font-bold">Active Users</p>
             {allConnectedUsers.length <= 1 ? (
               <div className="w-max mx-auto text-center mt-7">
                 <PersonOffIcon sx={{ color: "gray" }} />
@@ -670,7 +678,7 @@ const page = () => {
                           <Avatar
                             sx={{ height: "5rem", width: "5rem" }}
                             className="bg-red-200 border-2 border-green-600 mb-2"
-                            src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                            src=""
                           />
                         </div>
                         <p className="mb-2 text-sm">
@@ -703,9 +711,6 @@ const page = () => {
         {/* search */}
         {selectedMenu == "search" && (
           <div>
-            <p className="mb-2 text-sm text-gray-500 font-bold">
-              Search people
-            </p>
             <div className="searchbar bg-">
               <input
                 type="text"
@@ -769,7 +774,7 @@ const page = () => {
                                 ? " border-green-600"
                                 : " border-gray-500"
                             }`}
-                            src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                            src=""
                           />
                         </div>
                         {/* each-chat-info */}
@@ -807,7 +812,7 @@ const page = () => {
                   <Avatar
                     sx={{ height: "2.5rem", width: "2.5rem" }}
                     className="bg-red-200 border-2 border-green-600"
-                    src="https://scontent.fktm19-1.fna.fbcdn.net/v/t39.30808-1/440571631_3660838454174508_7761877485988410125_n.jpg?stp=c34.95.185.185a_dst-jpg_p240x240_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_ohc=xAi1HTjeLp8Q7kNvgH9_il0&_nc_zt=24&_nc_ht=scontent.fktm19-1.fna&_nc_gid=AmcnuchHXyyopIJX_UWHexM&oh=00_AYCsx8YDzWp8IU0dA9_W9W_JjskQonI2DaS09MgtgT2RGg&oe=67805C02"
+                    src=""
                   />
                 </div>
                 <div className="info ml-3">
