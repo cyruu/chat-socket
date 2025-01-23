@@ -20,9 +20,12 @@ import { notify } from "@/utils/notify";
 import { useRouter } from "next/navigation";
 
 const page = () => {
+  const uniqueDates: any = [];
   // state variables
 
   const [searchInput, setsearchInput] = useState<any>("");
+
+  const [mySocket, setmySocket] = useState<any>(null);
   const [defaultSearchUsers, setdefaultSearchUsers] = useState<any>([]);
   const [searchUsers, setsearchUsers] = useState<any>([]);
   const [showMessages, setshowMessages] = useState<any>([]);
@@ -97,7 +100,9 @@ const page = () => {
       notify(resData.msg, resData.statusCode);
       return;
     }
+    // change messagedeleted state variable
 
+    mySocket.emit("message-deleted", showMessage);
     // update your chats to show msg delted
     setyourChats((prev: any) => {
       let tempyourchats = [...prev];
@@ -170,7 +175,8 @@ const page = () => {
     if (sessionData?.user) {
       setsentBy(sessionData?.user?._id);
     }
-    const clientSocket = io("https://chat-socket-h3wn.onrender.com");
+    // const clientSocket = io("https://chat-socket-h3wn.onrender.com");
+    const clientSocket = io("");
     // on socket connection
     clientSocket.on("connect", () => {
       // set to componentClientSocket
@@ -179,6 +185,8 @@ const page = () => {
       if (sessionData) {
         clientSocket.emit("user-connected", sessionData);
       }
+      // set state socket
+      setmySocket(clientSocket);
       // set redux socket to connected socket
       dis(
         setSocket({ id: clientSocket.id, connected: clientSocket.connected })
@@ -281,10 +289,30 @@ const page = () => {
           );
         });
       });
-
+      // delete-message-from-server
+      clientSocket.on("delete-message-from-server", (showMessage) => {
+        setyourChats((prevYourChats: any) => {
+          let tempyourchats = [...prevYourChats];
+          tempyourchats = tempyourchats.map((yourChat: any) => {
+            if (
+              yourChat.createdAt == showMessage.createdAt &&
+              yourChat.latestMessage == showMessage.message
+            ) {
+              return { ...yourChat, isDeleted: true };
+            } else {
+              return yourChat;
+            }
+          });
+          return tempyourchats;
+        });
+      });
       // initially get all connected users
       clientSocket.on("connected-users", (connectedUsers: String[]) => {
         dis(setAllConnectedUsers(connectedUsers));
+      });
+      // on message-deleted
+      clientSocket.on("message-deleted", (showMessage: any) => {
+        console.log("msg delted notifiaiton");
       });
     });
     return () => {
@@ -358,7 +386,6 @@ const page = () => {
       sentBy,
     });
     const allMessages = resData.allMessages;
-
     // for localstorate
     let allConversations: any = {};
     let yourChats: any = [];
@@ -392,6 +419,7 @@ const page = () => {
           otherUserObject,
           latestMessage: message.message,
           createdAt: message.createdAt,
+          isDeleted: message.isDeleted,
         };
       } else {
         // Add a new chat entry for this user
@@ -399,6 +427,7 @@ const page = () => {
           otherUserObject,
           latestMessage: message.message,
           createdAt: message.createdAt,
+          isDeleted: message.isDeleted,
         });
       }
     });
@@ -439,10 +468,10 @@ const page = () => {
   return (
     <div
       ref={mainContainerRef}
-      className="main-container overflow-x-auto h-[100dvh]  snap-x snap-mandator flex scroll-smooth md:items-center md:justify-center md:w-[70vw] md:h-[90vh]"
+      className="main-container overflow-x-auto w-[100dvw] h-[100dvh] overflow-y-hidden snap-x  snap-mandatory flex scroll-smooth md:items-center md:justify-center md:w-[70vw] md:h-[90vh]"
     >
       {/*mainnn chat-container */}
-      <div className="chat-bar bg-white overflow-y-auto scrollbar-hide  flex-shrink-0 w-screen h-screen px-5 snap-start md:flex-shrink  md:w-1/2 md:h-full md:rounded-xl md:shadow-lg xl:w-[35%]">
+      <div className="chat-bar bg-white overflow-y-auto scrollbar-hide  flex-shrink-0 w-[100dvw] h-screen px-5 snap-center md:flex-shrink  md:w-1/2 md:h-full md:rounded-xl md:shadow-lg xl:w-[35%]">
         {/* chat-header */}
         <div className="chat-bar-header h-[8dvh] flex items-center justify-between">
           <p className="text-3xl font-bold ">Chat.io</p>
@@ -558,7 +587,7 @@ const page = () => {
               ) : (
                 <div className="all-chats  ">
                   {yourChats.map((chat: any) => {
-                    console.log(chat);
+                    // console.log(chat);
 
                     const {
                       otherUserObject,
@@ -801,7 +830,7 @@ const page = () => {
         )}
       </div>
       {/*mainnn message-side-container */}
-      <div className="message-side-container bg-white flex-shrink-0 w-screen flex-col h-full flex snap-start md:flex-shrink md:rounded-xl md:w-1/2 md:ml-3 xl:w-[65%]">
+      <div className="message-side-container bg-white flex-shrink-0 w-[100dvw] flex-col h-full flex snap-center md:flex-shrink md:rounded-xl md:w-1/2 md:ml-3 xl:w-[65%]">
         {receivedBy && receivedByObject ? (
           <>
             {/* message header */}
@@ -849,67 +878,106 @@ const page = () => {
               ) : (
                 <div className="all-messages max-h-full w-full ">
                   {showMessages.map((showMessage: any) => {
+                    console.log(showMessage);
+                    let isDifferentDate = false;
+                    const { createdAt } = showMessage;
+                    const currentDate = new Date(createdAt);
+                    let year = currentDate.toLocaleString("en-US", {
+                      year: "numeric",
+                    });
+                    let month = currentDate.toLocaleString("en-US", {
+                      month: "short",
+                    });
+                    let day = currentDate.toLocaleString("en-US", {
+                      day: "numeric",
+                    });
+                    let hours = currentDate.getHours();
+                    let minutes = currentDate
+                      .getMinutes()
+                      .toString()
+                      .padStart(2, "0");
+                    let period = hours >= 12 ? "PM" : "AM";
+
+                    hours = hours % 12 || 12;
+
+                    const tempDate = `${year}, ${month} ${day}`;
+                    if (!uniqueDates.includes(tempDate)) {
+                      isDifferentDate = true;
+                      uniqueDates.push(tempDate);
+                    }
                     return (
-                      <div
-                        ref={messageRef}
-                        key={showMessage?.createdAt + "-" + uuidv4()}
-                        className={`  flex ${
-                          showMessage.sentBy == sessionData?.user?._id
-                            ? " justify-end"
-                            : " justify-start"
-                        }`}
-                      >
-                        <div className=" flex items-start relative max-w-[50%] group">
-                          {showMessage.sentBy == sessionData?.user?._id && (
-                            <button
-                              onFocus={() => {
-                                setmessagePopUp(true);
-                                setselectedMessageDate(showMessage.createdAt);
-                              }}
-                              className="cursor-pointer hidden group-hover:block"
-                            >
-                              <MoreVertIcon
-                                sx={{ color: "gray", fontSize: "1.2rem" }}
-                              />
-                            </button>
-                          )}
-                          {/* pop up */}
-                          {messagePopUp &&
-                            new Date(selectedMessageDate).getTime() ==
-                              new Date(showMessage.createdAt).getTime() && (
-                              <div className="absolute flex flex-col items-start -left-[85px] -top-1 bg-gray-100 border shadow-md rounded-md overflow-hidden z-10 ">
-                                <button
-                                  className="text-xs text-gray-600 px-4 py-1 w-full hover:bg-gray-300"
-                                  onClick={() =>
-                                    handleDeleteMessage(showMessage)
-                                  }
-                                >
-                                  Delete
-                                </button>
-                                <button
-                                  className="text-xs text-gray-600 px-4 py-1 hover:bg-gray-300"
-                                  onClick={closeMessagePopUp}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
+                      <div key={showMessage?.createdAt + "-" + uuidv4()}>
+                        {/* new date */}
+                        {isDifferentDate && (
+                          <div className="w-max text-xs text-gray-500 mx-auto my-4">
+                            {tempDate}
+                          </div>
+                        )}
+                        <div
+                          ref={messageRef}
+                          className={`  flex ${
+                            showMessage.sentBy == sessionData?.user?._id
+                              ? " justify-end"
+                              : " justify-start"
+                          }`}
+                        >
+                          <div className=" flex items-start relative max-w-[45%] group">
+                            {showMessage.sentBy == sessionData?.user?._id && (
+                              <button
+                                onFocus={() => {
+                                  setmessagePopUp(true);
+                                  setselectedMessageDate(showMessage.createdAt);
+                                }}
+                                className={`cursor-pointer ${
+                                  messagePopUp ? " opacity-100 " : " opacity-0 "
+                                } opacity-0 group-hover:opacity-100`}
+                              >
+                                <MoreVertIcon
+                                  sx={{ color: "gray", fontSize: "1.2rem" }}
+                                />
+                              </button>
                             )}
-                          {/* main message */}
-                          <div
-                            className={`each-message py-2 px-3 mb-2 rounded-xl max-w-full w-max break-words ${
-                              showMessage.sentBy == sessionData?.user?._id
-                                ? " bg-blue-400 text-sm text-white "
-                                : " bg-gray-200 text-sm text-gray-500 "
-                            }
+                            {/* pop up */}
+                            {messagePopUp &&
+                              new Date(selectedMessageDate).getTime() ==
+                                new Date(showMessage.createdAt).getTime() && (
+                                <div className="absolute flex flex-col items-start -left-[75px] -top-1 bg-gray-100 border shadow-md rounded-md overflow-hidden z-10 ">
+                                  <button
+                                    className="text-xs text-gray-600 px-4 py-1 w-full hover:bg-gray-300"
+                                    onClick={() =>
+                                      handleDeleteMessage(showMessage)
+                                    }
+                                  >
+                                    Delete
+                                  </button>
+                                  <button
+                                    className="text-xs text-gray-600 px-4 py-1 hover:bg-gray-300"
+                                    onClick={closeMessagePopUp}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
+                            {/* main message */}
+                            <div
+                              className={`each-message py-2 px-3 mb-2 rounded-xl max-w-full w-max break-words ${
+                                showMessage.sentBy == sessionData?.user?._id
+                                  ? " bg-blue-400 text-sm text-white "
+                                  : " bg-gray-200 text-sm text-gray-500 "
+                              }
                             
                               
                             `}
-                          >
-                            {showMessage.isDeleted ? (
-                              <span>Message Deleted</span>
-                            ) : (
-                              <span>{showMessage?.message}</span>
-                            )}
+                            >
+                              {showMessage.isDeleted ? (
+                                <span>Message Deleted</span>
+                              ) : (
+                                <div className="flex flex-col">
+                                  <span>{showMessage?.message}</span>
+                                  <span className="text-xs w-max ml-auto">{`${hours}:${minutes} ${period}`}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

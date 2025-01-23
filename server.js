@@ -74,7 +74,17 @@ app.prepare().then(() => {
         ...tempMessage,
       });
     });
-
+    // on deletemessage
+    socket.on("message-deleted", (showMessage) => {
+      const { receivedBy } = showMessage;
+      const receiverSocketId =
+        connectedUsers.filter((connectedUser) => {
+          return connectedUser._id == receivedBy;
+        })[0]?.socketId || null;
+      socket
+        .to(receiverSocketId)
+        .emit("delete-message-from-server", showMessage);
+    });
     // on disconnect
     socket.on("disconnect", () => {
       console.log("dissssssss", socket.id);
