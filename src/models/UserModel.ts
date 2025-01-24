@@ -16,6 +16,9 @@ const UserSchema = new mongoose.Schema(
       required: [true, "Please provide an email"],
       unique: true,
     },
+    imageUrl: {
+      type: String,
+    },
     isadmin: {
       type: Boolean,
       default: false,
