@@ -31,6 +31,7 @@ const LoginPage = () => {
     });
     if (resData?.error) {
       notify(resData?.error, resData?.status);
+      setloading(false);
       return;
     }
     notify("Login success", resData?.status);

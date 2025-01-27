@@ -32,6 +32,7 @@ export const authOptions: NextAuthOptions = {
             _id: userCheck._id,
             username: userCheck.username,
             email: userCheck.email,
+            imageUrl: userCheck.imageUrl,
             isadmin: userCheck.isadmin,
           };
           return user;
@@ -46,6 +47,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token._id = user._id;
         token.username = user.username;
+        token.imageUrl = user.imageUrl;
         token.email = user.email;
       }
       return token;
@@ -54,6 +56,7 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user._id = token._id as string;
         session.user.username = token.username as string;
+        session.user.imageUrl = token.imageUrl as string;
         session.user.email = token.email as string;
       }
       return session;

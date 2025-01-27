@@ -1,4 +1,5 @@
 "use client";
+import { CldImage } from "next-cloudinary";
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { notify } from "@/index";
@@ -23,6 +24,7 @@ const SignupPage = () => {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [imageFile, setimageFile] = useState<File | any>(null);
 
   const [selectedImage, setSelectedImage] = useState<any>(null);
 
@@ -33,19 +35,44 @@ const SignupPage = () => {
   const handleFileChange = (e: any) => {
     const file = e.target.files[0];
     if (file) {
+      setimageFile(file);
       setSelectedImage(URL.createObjectURL(file)); // Create a preview URL for the image
     }
   };
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setloading(true);
+    let imageUrl = "none";
+    // cloudinary
+    // if file set
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append("file", imageFile);
+      const { data: resData } = await axios.post("/api/imageupload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      // cloudinary error
+      if (resData.error) {
+        notify("Error uploading file", 204);
+      }
+      // cloudinary success
+      else {
+        imageUrl = resData.res.secure_url;
+      }
+    }
+
+    // signup
     const { data: resData } = await axios.post("api/users/signup", {
       username,
       email,
       password,
+      imageUrl,
     });
     notify(resData.msg, resData?.statusCode);
     if (resData.statusCode != 200) {
+      setloading(false);
       return;
     }
 
@@ -80,6 +107,7 @@ const SignupPage = () => {
             onChange={handleFileChange}
             type="file"
             id="imginput"
+            name="imginput"
             className="hidden"
           />
         </div>

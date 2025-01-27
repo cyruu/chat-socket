@@ -46,6 +46,7 @@ const page = () => {
 
   //session data
   const { data: sessionData, status } = useSession();
+
   //redux hooks
   const dis = useDispatch();
   // redux socket only contain socketid , connected i.e. {id,connected}
@@ -519,8 +520,12 @@ const page = () => {
             <span className="absolute z-20 h-[8px] w-[8px] bg-green-500 bottom-0 left-0 rounded-full"></span>
             <Avatar
               sx={{ height: "3.5rem", width: "3.5rem" }}
-              className="bg-red-200 border-2 border-green-600"
-              src=""
+              className="border-2 border-green-600"
+              src={
+                sessionData?.user.imageUrl == "none"
+                  ? ""
+                  : sessionData?.user.imageUrl
+              }
             />
           </div>
           <div className="info ml-3">
@@ -600,6 +605,7 @@ const page = () => {
                       (connectedUser: any) =>
                         connectedUser._id === otherUserObject._id
                     );
+                    console.log(chat);
 
                     // each chat
                     return (
