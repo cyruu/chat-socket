@@ -859,7 +859,11 @@ const page = () => {
                   <Avatar
                     sx={{ height: "2.5rem", width: "2.5rem" }}
                     className="bg-red-200 border-2 border-green-600"
-                    src=""
+                    src={
+                      receivedByObject?.imageUrl == "none"
+                        ? ""
+                        : receivedByObject?.imageUrl
+                    }
                   />
                 </div>
                 <div className="info ml-3">
