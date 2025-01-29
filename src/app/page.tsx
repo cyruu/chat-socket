@@ -341,6 +341,7 @@ const page = () => {
           _id: sessionData?.user?._id,
           username: sessionData?.user?.username,
           email: sessionData?.user?.email,
+          imageUrl: sessionData?.user?.imageUrl,
         },
         receivedBy,
         receivedByObject,
@@ -349,6 +350,7 @@ const page = () => {
         isDeleted: false,
         createdAt: Date.now(),
       };
+      console.log("sendingggggggggg", tempMessage);
 
       componentClientSocket.emit("send-message", tempMessage);
       // data to database
@@ -592,7 +594,7 @@ const page = () => {
               ) : (
                 <div className="all-chats  ">
                   {yourChats.map((chat: any) => {
-                    // console.log(chat);
+                    console.log(chat);
 
                     const {
                       otherUserObject,
@@ -634,7 +636,11 @@ const page = () => {
                                 ? " border-green-600"
                                 : " border-gray-500"
                             }`}
-                            src=""
+                            src={
+                              otherUserObject?.imageUrl == "none"
+                                ? ""
+                                : otherUserObject?.imageUrl
+                            }
                           />
                         </div>
                         {/* each-chat-info */}
@@ -701,7 +707,7 @@ const page = () => {
                 {allConnectedUsers.map((connectedUser: any) => {
                   if (connectedUser.socketId != socket.id) {
                     // if (true) {
-                    console.log(connectedUser);
+                    // console.log(connectedUser);
 
                     return (
                       <div
@@ -712,8 +718,12 @@ const page = () => {
                           <span className="absolute z-20 h-[10px] w-[10px] bg-green-500 bottom-0 left-0 rounded-full"></span>
                           <Avatar
                             sx={{ height: "5rem", width: "5rem" }}
-                            className="bg-red-200 border-2 border-green-600 mb-2"
-                            src=""
+                            className=" border-2 border-green-600 mb-2"
+                            src={
+                              connectedUser?.imageUrl == "none"
+                                ? ""
+                                : connectedUser?.imageUrl
+                            }
                           />
                         </div>
                         <p className="mb-2 text-sm">
@@ -777,6 +787,7 @@ const page = () => {
                     let userActive = allConnectedUsers.some(
                       (connectedUser: any) => connectedUser._id === user._id
                     );
+
                     return (
                       <Button
                         onClick={() => {
@@ -787,6 +798,7 @@ const page = () => {
                             username: user.username,
                             email: user.email,
                             _id: user._id,
+                            imageUrl: user.imageUrl,
                           });
                           scrollToRight();
                         }}
@@ -804,12 +816,12 @@ const page = () => {
 
                           <Avatar
                             sx={{ height: "3rem", width: "3rem" }}
-                            className={`bg-red-200 border-2 ${
+                            className={`border-2 ${
                               userActive
                                 ? " border-green-600"
                                 : " border-gray-500"
                             }`}
-                            src=""
+                            src={user?.imageUrl == "none" ? "" : user?.imageUrl}
                           />
                         </div>
                         {/* each-chat-info */}
@@ -884,7 +896,7 @@ const page = () => {
               ) : (
                 <div className="all-messages max-h-full w-full ">
                   {showMessages.map((showMessage: any) => {
-                    console.log(showMessage);
+                    // console.log(showMessage);
                     let isDifferentDate = false;
                     const { createdAt } = showMessage;
                     const currentDate = new Date(createdAt);

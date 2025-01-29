@@ -28,13 +28,19 @@ app.prepare().then(() => {
     // initial socket connection event
     socket.on("user-connected", (sessionData) => {
       const {
-        user: { _id, username, email },
+        user: { _id, username, email, imageUrl },
       } = sessionData;
       // Remove old entry for the same user (_id)
       connectedUsers = connectedUsers.filter(
         (eachConnectedUser) => eachConnectedUser._id !== _id
       );
-      const tempConnectedUsers = { _id, username, email, socketId: socket.id };
+      const tempConnectedUsers = {
+        _id,
+        username,
+        email,
+        imageUrl,
+        socketId: socket.id,
+      };
       connectedUsers.push(tempConnectedUsers);
       io.emit("connected-users", connectedUsers);
     });
